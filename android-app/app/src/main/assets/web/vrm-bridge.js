@@ -148,7 +148,7 @@ const VRMBridge = {
             const center = box.getCenter(new THREE.Vector3());
             console.log('[VRM] Model size:', size.x.toFixed(2), size.y.toFixed(2), size.z.toFixed(2));
 
-            const targetHeight = 0.9;
+            const targetHeight = 0.6;
             const scale = targetHeight / size.y;
             vrm.scene.scale.setScalar(scale);
             vrm.scene.position.set(-center.x * scale, -box.min.y * scale - 0.1, 0);
