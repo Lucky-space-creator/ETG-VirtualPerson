@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -47,11 +48,13 @@ import kotlinx.coroutines.delay
  * 聊天主界面 — 数字人全屏 + 悬浮UI
  *
  * Box (全屏)
- *   ├── AndroidView  (数字人VRM + 背景图，全屏底层)
+ *   ├── AndroidView  (VRM + 背景图，全屏底层)
  *   └── Column (全屏透明悬浮)
- *        ├── TopBar    (透明，顶部)
- *        ├── Spacer    (中间留空，展示数字人)
- *        └── ChatSection (透明，底部聊天)
+ *        ├── TopBar (顶部栏)
+ *        ├── Box (中间区域，weight 1f)
+ *        │    ├── TourProgressCard (游览进度，悬浮)
+ *        │    └── MapButton (查看地图按钮，右下角)
+ *        └── ChatSection (底部聊天)
  */
 @Composable
 fun ChatScreen(
@@ -80,7 +83,6 @@ fun ChatScreen(
     var isPageLoaded by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
-    // WebView就绪后加载VRM模型
     LaunchedEffect(vrmState.modelUrl, isPageLoaded) {
         if (isPageLoaded && vrmState.modelUrl.isNotEmpty()) {
             Log.d("ChatScreen", "Loading VRM model: ${vrmState.modelUrl}")
@@ -92,8 +94,11 @@ fun ChatScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted -> if (granted) isRecording = true }
 
+    // 是否正在游览
+    val isTourActive = uiState.isTourActive
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // ====== 全屏：数字人VRM + 背景 ======
+        // ====== 底层：数字人VRM + 背景 ======
         AndroidView(
             factory = {
                 FrameLayout(context).apply {
@@ -101,8 +106,6 @@ fun ChatScreen(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
-
-                    // 背景图片
                     val bgImageView = ImageView(context).apply {
                         tag = "bgImageView"
                         scaleType = ImageView.ScaleType.CENTER_CROP
@@ -114,7 +117,6 @@ fun ChatScreen(
                     }
                     addView(bgImageView)
 
-                    // WebView (VRM)
                     val webView = WebView(context).apply {
                         setBackgroundColor(AndroidColor.TRANSPARENT)
                         setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
@@ -154,7 +156,6 @@ fun ChatScreen(
                                 }
                             }
                         }
-
                         loadUrl("file:///android_asset/web/index.html")
                     }
                     addView(webView, FrameLayout.LayoutParams(
@@ -176,26 +177,63 @@ fun ChatScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // ====== 悬浮层：上中下布局 ======
+        // ====== 悬浮层 ======
         Column(modifier = Modifier.fillMaxSize()) {
-            // 顶部栏（透明）
+            // 顶部栏
             TopBar(
                 avatarName = currentAvatarName,
                 onRouteClick = onNavigateToRoute,
                 onSettingsClick = onNavigateToSettings
             )
 
-            // 中间留空（展示数字人）
-            Spacer(modifier = Modifier.weight(1f))
+            // 中间区域：进度卡片 + 查看地图按钮
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                // 游览进度卡片（悬浮在数字人上方）
+                if (isTourActive) {
+                    TourProgressOverlay(
+                        uiState = uiState,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
 
-            // 底部聊天（透明）
+                // 选择路线后 + 未开始游览：显示路线信息 + 开始按钮
+                if (uiState.selectedRouteId != null && !isTourActive) {
+                    RouteReadyCard(
+                        routeName = uiState.selectedRouteName ?: "",
+                        onStartTour = {
+                            chatViewModel.startTour()
+                            onNavigateToMap()
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+
+                // 查看地图按钮（右下角浮动）
+                if (uiState.selectedRouteId != null) {
+                    FloatingActionButton(
+                        onClick = onNavigateToMap,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp),
+                        containerColor = Color(0xFFE91E63),
+                        contentColor = Color.White
+                    ) {
+                        Icon(Icons.Filled.Map, "查看地图")
+                    }
+                }
+            }
+
+            // 底部聊天
             ChatSection(
                 uiState = uiState,
                 vrmState = vrmState,
                 chatViewModel = chatViewModel,
                 interestTags = interestTags,
                 isRecording = isRecording,
-                onNavigateToMap = onNavigateToMap,
                 onVoiceStart = {
                     if (ContextCompat.checkSelfPermission(
                             context, Manifest.permission.RECORD_AUDIO
@@ -229,27 +267,154 @@ private fun TopBar(
         IconButton(onClick = onRouteClick) {
             Icon(Icons.Filled.Map, "路线", tint = Color.White)
         }
-
         Column(
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                avatarName,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = Color.White
-            )
-            Text(
-                "在线陪你逛",
+            Text(avatarName,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White)
+            Text("在线陪你逛",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.8f)
-            )
+                color = Color.White.copy(alpha = 0.8f))
         }
-
         IconButton(onClick = onSettingsClick) {
             Icon(Icons.Filled.Settings, "设置", tint = Color.White)
+        }
+    }
+}
+
+// ==================== 游览进度悬浮卡片 ====================
+
+@Composable
+private fun TourProgressOverlay(
+    uiState: com.virtualwife.app.viewmodel.ChatUiState,
+    modifier: Modifier = Modifier
+) {
+    val spots = uiState.tourSpots
+    val visited = uiState.visitedSpots
+    val currentIdx = uiState.currentSpotIndex
+    val currentSpot = if (currentIdx in spots.indices) spots[currentIdx] else null
+    val nextIdx = spots.indices.firstOrNull { !visited.contains(it) && it != currentIdx }
+    val nextSpot = if (nextIdx != null) spots[nextIdx] else null
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // 进度标题
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Timeline, null,
+                    tint = Color(0xFFE91E63), modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("游览进度",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                Spacer(modifier = Modifier.weight(1f))
+                Text("${visited.size}/${spots.size}",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold, color = Color(0xFFE91E63)))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = visited.size.toFloat() / spots.size.coerceAtLeast(1).toFloat(),
+                modifier = Modifier.fillMaxWidth().height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = Color(0xFFE91E63)
+            )
+
+            // 当前景点
+            if (currentSpot != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.LocationOn, null,
+                        tint = Color(0xFFE91E63), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("当前：${currentSpot.name}",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
+                }
+            }
+
+            // 下一景点
+            if (nextSpot != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Flag, null,
+                        tint = Color.Gray, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("下一：${nextSpot.name}",
+                        style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+            }
+
+            // 进度点
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                spots.forEachIndexed { index, spot ->
+                    val isVisited = visited.contains(index)
+                    val isCurrent = index == currentIdx
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    isCurrent -> Color(0xFFE91E63)
+                                    isVisited -> Color(0xFF4CAF50)
+                                    else -> Color.LightGray
+                                }
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ==================== 路线就绪卡片（未开始游览）====================
+
+@Composable
+private fun RouteReadyCard(
+    routeName: String,
+    onStartTour: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Route, null,
+                tint = Color(0xFFE91E63), modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(routeName,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF1C1B1F))
+                Text("路线已就绪，点击开始游览",
+                    style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
+            Button(
+                onClick = onStartTour,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63)),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("开始", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
         }
     }
 }
@@ -263,7 +428,6 @@ private fun ChatSection(
     chatViewModel: ChatViewModel,
     interestTags: Set<String>,
     isRecording: Boolean,
-    onNavigateToMap: () -> Unit = {},
     onVoiceStart: () -> Unit,
     onVoiceEnd: () -> Unit,
     onCameraClick: () -> Unit,
@@ -271,7 +435,6 @@ private fun ChatSection(
 ) {
     val listState = rememberLazyListState()
     val app = LocalContext.current.applicationContext as com.virtualwife.app.MainApplication
-    // 提升到外层，避免每个item都创建新的State
     val userName by app.preferencesManager.username.collectAsState(initial = "用户")
     val displayName = userName.ifEmpty { "用户" }
     val aiName = vrmState.avatarName.ifEmpty { "AI导游" }
@@ -284,22 +447,15 @@ private fun ChatSection(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
+        modifier = modifier.fillMaxWidth().navigationBarsPadding()
     ) {
-        RoutePromptCard(uiState, chatViewModel, onNavigateToMap)
-
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            items(
-                items = uiState.messages,
-                key = { it.id }
-            ) { message ->
+            items(items = uiState.messages, key = { it.id }) { message ->
                 ChatBubble(
                     message = message,
                     avatarThumbnailUrl = avatarThumb,
@@ -307,11 +463,9 @@ private fun ChatSection(
                     aiName = aiName
                 )
             }
-
             if (uiState.isAiTyping) {
                 item(key = "streaming") { StreamingBubble(content = "思考中...") }
             }
-
             if (uiState.messages.isEmpty() && !uiState.isAiTyping) {
                 item(key = "welcome") { WelcomeMessage(interestTags = interestTags) }
             }
@@ -327,52 +481,6 @@ private fun ChatSection(
     }
 }
 
-// ==================== 路线选择提示 ====================
-
-@Composable
-private fun RoutePromptCard(
-    uiState: com.virtualwife.app.viewmodel.ChatUiState,
-    chatViewModel: ChatViewModel,
-    onNavigateToMap: () -> Unit = {}
-) {
-    if (uiState.selectedRouteId != null && !uiState.isTourActive) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Filled.Route, null,
-                    tint = Color(0xFFE91E63), modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    uiState.selectedRouteName ?: "",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF1C1B1F),
-                    modifier = Modifier.weight(1f)
-                )
-                Button(
-                    onClick = {
-                        chatViewModel.startTour()
-                        onNavigateToMap()
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63)),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text("开始游览", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                }
-            }
-        }
-    }
-}
-
 // ==================== 欢迎消息 ====================
 
 @Composable
@@ -383,7 +491,6 @@ private fun WelcomeMessage(interestTags: Set<String> = emptySet()) {
     } else {
         "我是你的AI导游小助手\n可以为你介绍景点、推荐路线\n有什么想问的尽管说～"
     }
-
     val quickTags = when {
         interestTags.contains("历史文化") -> listOf("🏛️ 历史古迹", "📜 文化故事", "🗺️ 人文路线")
         interestTags.contains("自然风光") -> listOf("🌿 自然景观", "🌸 赏花攻略", "🥾 徒步路线")
@@ -393,49 +500,33 @@ private fun WelcomeMessage(interestTags: Set<String> = emptySet()) {
         else -> listOf("🏛️ 景点", "🗺️ 路线", "🍜 美食")
     }
 
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
+            modifier = Modifier.fillMaxWidth(0.85f)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color.White.copy(alpha = 0.7f))
                 .padding(24.dp)
         ) {
             Text("🌸", fontSize = 36.sp)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                "你好呀～",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = Color(0xFF1C1B1F)
-            )
+            Text("你好呀～",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = Color(0xFF1C1B1F))
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                greetingText,
+            Text(greetingText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF79747E),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                lineHeight = 22.sp
-            )
+                lineHeight = 22.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 quickTags.forEach { tag ->
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.White,
-                        shadowElevation = 0.dp
-                    ) {
-                        Text(
-                            tag,
+                    Surface(shape = RoundedCornerShape(20.dp), color = Color.White, shadowElevation = 0.dp) {
+                        Text(tag,
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                             style = MaterialTheme.typography.bodySmall,
-                            color = PrimaryLight
-                        )
+                            color = PrimaryLight)
                     }
                 }
             }
@@ -477,7 +568,6 @@ private fun VrmLipSyncEffect(
     uiState: com.virtualwife.app.viewmodel.ChatUiState,
     vrmViewModel: VrmViewModel
 ) {
-    // AI打字口型
     LaunchedEffect(uiState.isAiTyping) {
         if (uiState.isAiTyping) {
             val lastMsg = uiState.messages.lastOrNull()
@@ -489,7 +579,6 @@ private fun VrmLipSyncEffect(
         }
     }
 
-    // TTS播放口型+动作（用snapshotFlow避免while循环捕获旧值）
     LaunchedEffect(Unit) {
         snapshotFlow { uiState.isTtsPlaying }
             .collect { isPlaying ->
@@ -497,7 +586,6 @@ private fun VrmLipSyncEffect(
                     vrmViewModel.startTalking(300000L)
                     vrmViewModel.playGuideAction("explain")
                     delay(3000)
-                    // 持续触发随机动作直到TTS停止
                     while (uiState.isTtsPlaying) {
                         vrmViewModel.playRandomAction()
                         delay(5000)
