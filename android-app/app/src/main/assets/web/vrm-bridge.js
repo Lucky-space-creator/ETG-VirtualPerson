@@ -301,19 +301,19 @@ const VRMBridge = {
             const rightUpperArm = h.getNormalizedBoneNode('rightUpperArm');
 
             if (leftUpperArm) {
-                leftUpperArm.rotation.set(0, 0, 1.4);
+                leftUpperArm.rotation.set(0, 0, 0.9);
                 console.log('[VRM] Left upper arm z:', leftUpperArm.rotation.z);
             }
             if (rightUpperArm) {
-                rightUpperArm.rotation.set(0, 0, -1.4);
+                rightUpperArm.rotation.set(0, 0, -0.9);
                 console.log('[VRM] Right upper arm z:', rightUpperArm.rotation.z);
             }
 
-            // 前臂自然放松
+            // 前臂自然微弯
             const leftLowerArm = h.getNormalizedBoneNode('leftLowerArm');
             const rightLowerArm = h.getNormalizedBoneNode('rightLowerArm');
-            if (leftLowerArm) leftLowerArm.rotation.set(0, 0, 0);
-            if (rightLowerArm) rightLowerArm.rotation.set(0, 0, 0);
+            if (leftLowerArm) leftLowerArm.rotation.set(-0.3, 0, 0);
+            if (rightLowerArm) rightLowerArm.rotation.set(-0.3, 0, 0);
 
             // 手腕自然放松
             const leftHand = h.getNormalizedBoneNode('leftHand');
@@ -547,8 +547,8 @@ const VRMBridge = {
         // 上臂自然下垂
         const leftUpperArm = humanoid.getNormalizedBoneNode('leftUpperArm');
         const rightUpperArm = humanoid.getNormalizedBoneNode('rightUpperArm');
-        if (leftUpperArm) leftUpperArm.rotation.set(0, 0, 1.4);
-        if (rightUpperArm) rightUpperArm.rotation.set(0, 0, -1.4);
+        if (leftUpperArm) leftUpperArm.rotation.set(0, 0, 0.9);
+        if (rightUpperArm) rightUpperArm.rotation.set(0, 0, -0.9);
 
         // 前臂
         const leftLowerArm = humanoid.getNormalizedBoneNode('leftLowerArm');
@@ -648,13 +648,13 @@ const VRMBridge = {
 
         const leftUpperArm = h.getNormalizedBoneNode('leftUpperArm');
         const rightUpperArm = h.getNormalizedBoneNode('rightUpperArm');
-        if (leftUpperArm) leftUpperArm.rotation.set(0, 0, 1.4);
-        if (rightUpperArm) rightUpperArm.rotation.set(0, 0, -1.4);
+        if (leftUpperArm) leftUpperArm.rotation.set(0, 0, 0.9);
+        if (rightUpperArm) rightUpperArm.rotation.set(0, 0, -0.9);
 
         const leftLowerArm = h.getNormalizedBoneNode('leftLowerArm');
         const rightLowerArm = h.getNormalizedBoneNode('rightLowerArm');
-        if (leftLowerArm) leftLowerArm.rotation.set(0, 0, 0);
-        if (rightLowerArm) rightLowerArm.rotation.set(0, 0, 0);
+        if (leftLowerArm) leftLowerArm.rotation.set(-0.3, 0, 0);
+        if (rightLowerArm) rightLowerArm.rotation.set(-0.3, 0, 0);
 
         const leftHand = h.getNormalizedBoneNode('leftHand');
         const rightHand = h.getNormalizedBoneNode('rightHand');

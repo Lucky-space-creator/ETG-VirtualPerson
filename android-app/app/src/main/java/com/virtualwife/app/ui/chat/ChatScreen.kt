@@ -210,6 +210,7 @@ fun ChatScreen(
             if (isTourActive) {
                 TourProgressOverlay(
                     uiState = uiState,
+                    onCancelTour = { chatViewModel.stopTour() },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
@@ -287,6 +288,7 @@ private fun TopBar(
 @Composable
 private fun TourProgressOverlay(
     uiState: com.virtualwife.app.viewmodel.ChatUiState,
+    onCancelTour: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val spots = uiState.tourSpots
@@ -314,6 +316,14 @@ private fun TourProgressOverlay(
                 Text("${visited.size}/${spots.size}",
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold, color = Color(0xFFE91E63)))
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = onCancelTour,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(Icons.Filled.Close, "取消游览",
+                        tint = Color.Gray, modifier = Modifier.size(18.dp))
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
