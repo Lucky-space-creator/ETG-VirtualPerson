@@ -98,6 +98,11 @@ fun ChatScreen(
     // 是否正在游览
     val isTourActive = uiState.isTourActive
 
+    // 调试日志
+    LaunchedEffect(uiState.selectedRouteId, uiState.selectedRouteName, isTourActive) {
+        Log.d("ChatScreen", "RouteState: id=${uiState.selectedRouteId}, name=${uiState.selectedRouteName}, active=$isTourActive")
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // ====== 底层：数字人VRM + 背景 ======
         AndroidView(
