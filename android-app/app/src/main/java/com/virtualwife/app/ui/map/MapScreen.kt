@@ -61,9 +61,9 @@ fun MapScreen(
         try {
             Log.d("MapScreen", "Initializing AMap location client...")
             // 高德SDK隐私合规
-            AMapLocationClient.updatePrivacyShow(context, true)
+            AMapLocationClient.updatePrivacyShow(context, true, true)
             AMapLocationClient.updatePrivacyAgree(context, true)
-            com.amap.api.maps.MapsInitializer.updatePrivacyShow(context, true)
+            com.amap.api.maps.MapsInitializer.updatePrivacyShow(context, true, true)
             com.amap.api.maps.MapsInitializer.updatePrivacyAgree(context, true)
             val client = AMapLocationClient(context)
             val option = AMapLocationClientOption().apply {
