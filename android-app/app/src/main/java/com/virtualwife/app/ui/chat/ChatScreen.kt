@@ -83,6 +83,7 @@ fun ChatScreen(
     var isPageLoaded by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
+    // 模型URL变化时才加载（JS层有缓存，不会重复下载）
     LaunchedEffect(vrmState.modelUrl, isPageLoaded) {
         if (isPageLoaded && vrmState.modelUrl.isNotEmpty()) {
             Log.d("ChatScreen", "Loading VRM model: ${vrmState.modelUrl}")

@@ -12,6 +12,9 @@ const VRMBridge = {
     lipSyncValue: 0,
     blinkTimer: 0,
     isBlinking: false,
+    // 模型缓存：{ url: { vrm, scene } }
+    _modelCache: {},
+    _currentUrl: '',
 
     init() {
         console.log('[VRM] Initializing...');
@@ -62,15 +65,45 @@ const VRMBridge = {
 
     async loadModel(url) {
         try {
+            // 如果同一个模型已显示，跳过
+            if (url === this._currentUrl && this.vrmModel) {
+                console.log('[VRM] Same model already displayed, skip');
+                if (window.AndroidBridge && window.AndroidBridge.onVrmLoaded) {
+                    window.AndroidBridge.onVrmLoaded(url);
+                }
+                return;
+            }
+
+            // 移除当前模型
+            if (this.vrmModel) {
+                this.scene.remove(this.vrmModel.scene);
+                this.vrmModel = null;
+                this._currentUrl = '';
+            }
+
+            // 检查缓存
+            if (this._modelCache[url]) {
+                console.log('[VRM] Cache hit, restoring model');
+                const cached = this._modelCache[url];
+                this.vrmModel = cached.vrm;
+                this._currentUrl = url;
+                this.scene.add(cached.vrm.scene);
+                this._adjustCamera(cached.vrm);
+                document.getElementById('loading').style.display = 'none';
+                if (window.AndroidBridge && window.AndroidBridge.onVrmLoaded) {
+                    window.AndroidBridge.onVrmLoaded(url);
+                }
+                return;
+            }
+
+            // 缓存未命中，加载模型
             console.log('[VRM] Loading model from:', url.substring(0, 80) + '...');
             document.getElementById('loading').style.display = 'block';
             document.getElementById('loading').querySelector('span').textContent = '加载模型中...';
 
-            // 创建GLTFLoader并注册VRM插件
             const loader = new THREE.GLTFLoader();
             loader.register((parser) => new THREE.VRMLoaderPlugin(parser));
 
-            // 加载模型（带超时）
             const gltf = await new Promise((resolve, reject) => {
                 const timeout = setTimeout(() => {
                     reject(new Error('Model load timeout (15s)'));
@@ -104,45 +137,30 @@ const VRMBridge = {
                 throw new Error('Failed to parse VRM model - no VRM data found');
             }
 
-            console.log('[VRM] VRM parsed, adding to scene...');
-            console.log('[VRM] VRM humanoid:', vrm.humanoid ? 'exists' : 'MISSING');
-            console.log('[VRM] VRM expressionManager:', vrm.expressionManager ? 'exists' : 'MISSING');
-
-            // 移除旧模型
-            if (this.vrmModel) {
-                this.scene.remove(this.vrmModel.scene);
-            }
+            console.log('[VRM] VRM parsed, humanoid:', vrm.humanoid ? 'ok' : 'MISSING');
 
             this.vrmModel = vrm;
+            this._currentUrl = url;
 
-            // 调整模型 - 让模型更大更居中
+            // 调整模型
             const box = new THREE.Box3().setFromObject(vrm.scene);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
-
             console.log('[VRM] Model size:', size.x.toFixed(2), size.y.toFixed(2), size.z.toFixed(2));
 
-            // 缩放：0.9大小
             const targetHeight = 0.9;
             const scale = targetHeight / size.y;
             vrm.scene.scale.setScalar(scale);
-
-            // 居中：让模型脚部在y=0，身体居中，下移0.1
             vrm.scene.position.set(-center.x * scale, -box.min.y * scale - 0.1, 0);
-
-            // 面向相机
             vrm.scene.rotation.y = Math.PI;
 
-            // 调整手臂姿势为自然下垂
-            console.log('[VRM] Adjusting arm pose...');
             this._adjustArmPose(vrm);
-
             this.scene.add(vrm.scene);
+            this._adjustCamera(vrm);
 
-            // 调整相机看模型上半身（脸部区域）
-            const headY = (box.max.y * scale) * 0.75;
-            this.camera.position.set(0, headY + 0.2, 1.5);
-            this.camera.lookAt(0, headY, 0);
+            // 存入缓存
+            this._modelCache[url] = { vrm: vrm };
+            console.log('[VRM] Model cached, total cached:', Object.keys(this._modelCache).length);
 
             document.getElementById('loading').style.display = 'none';
             console.log('[VRM] Model added, scale=' + scale.toFixed(2));
@@ -152,7 +170,6 @@ const VRMBridge = {
             }
         } catch (e) {
             console.error('[VRM] Model load error:', e.message);
-            // 直接显示2D降级，不等待
             document.getElementById('loading').style.display = 'none';
             document.getElementById('vrm-canvas').style.display = 'none';
             document.getElementById('avatar-2d').style.display = 'block';
@@ -161,6 +178,15 @@ const VRMBridge = {
                 window.AndroidBridge.onError(e.message);
             }
         }
+    },
+
+    // 调整相机对准模型脸部
+    _adjustCamera(vrm) {
+        const box = new THREE.Box3().setFromObject(vrm.scene);
+        const scale = vrm.scene.scale.x;
+        const headY = (box.max.y * scale) * 0.75;
+        this.camera.position.set(0, headY + 0.2, 1.5);
+        this.camera.lookAt(0, headY, 0);
     },
 
     setExpression(name) {
