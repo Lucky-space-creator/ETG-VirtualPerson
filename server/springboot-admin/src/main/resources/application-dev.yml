@@ -1,0 +1,30 @@
+# 开发环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/virtualwife_admin?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 3
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+virtualwife:
+  django:
+    api-url: http://localhost:8000
+  rag:
+    api-url: http://localhost:5001
+  minio:
+    endpoint: http://localhost:9000
+    external-endpoint: http://10.0.2.2:9000
+    bucket: virtual-knowledge
+
+logging:
+  level:
+    com.virtualwife.admin: DEBUG
+    org.springframework.security: DEBUG

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>向量库管理 - D:\Milvus\vectordb</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--border:#334155}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar h1{font-size:16px;letter-spacing:.5px}
+.topbar .path{font-size:11px;color:var(--muted)}
+.container{max-width:1100px;margin:0 auto;padding:20px 16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.card{background:var(--card);border-radius:10px;padding:16px 20px;border:1px solid var(--border)}
+.card .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.card .val{font-size:26px;font-weight:700}
+.val-blue{color:var(--blue)} .val-green{color:var(--green)} .val-amber{color:#f59e0b} .val-red{color:var(--red)}
+.panel{background:var(--card);border-radius:10px;border:1px solid var(--border);overflow:hidden;margin-bottom:16px}
+.panel-hd{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 16px;font-size:11px;color:var(--muted);text-transform:uppercase;background:rgba(255,255,255,.02)}
+td{padding:10px 16px;border-top:1px solid var(--border)}
+tr:hover{background:rgba(255,255,255,.03)}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.tag-b{background:rgba(59,130,246,.15);color:var(--blue)}
+.tag-g{background:rgba(34,197,94,.15);color:var(--green)}
+.tag-r{background:rgba(239,68,68,.15);color:var(--red)}
+.btn{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:500;transition:.15s}
+.btn:hover{opacity:.85}
+.btn-b{background:var(--blue);color:#fff}
+.btn-g{background:var(--green);color:#fff}
+.btn-r{background:var(--red);color:#fff}
+.btn-o{background:#f59e0b;color:#000}
+.btn-m{margin:0 3px}
+.inp{padding:7px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;outline:none;width:200px}
+.inp:focus{border-color:var(--blue)}
+.flex{display:flex;gap:8px;align-items:center}
+.chunk-list{max-height:420px;overflow-y:auto}
+.chunk-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px}
+.chunk-row:hover{background:rgba(255,255,255,.02)}
+.chunk-text{flex:1;line-height:1.6;color:var(--muted);max-height:72px;overflow:hidden}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:100;justify-content:center;align-items:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:12px;padding:24px;width:620px;max-height:85vh;overflow-y:auto;border:1px solid var(--border)}
+.modal h3{font-size:15px;margin-bottom:12px}
+.modal textarea{width:100%;height:160px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-size:12px;resize:vertical}
+.hit-row{background:var(--bg);border-radius:6px;padding:10px 14px;margin-bottom:8px;border-left:3px solid var(--blue)}
+.hit-row .meta{font-size:11px;color:var(--muted);margin-bottom:4px}
+.hit-row .content{font-size:12px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div><h1>VectorDB Manager</h1><div class="path">D:\Milvus\vectordb\vectors.db</div></div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <a href="/static/graph.html" style="color:#38bdf8;text-decoration:none;font-size:12px;padding:6px 12px;border:1px solid #334155;border-radius:6px">🧠 知识图谱</a>
+    <span style="font-size:12px;color:var(--muted)" id="timeNow"></span>
+  </div>
+</div>
+<div class="container">
+
+  <div class="grid">
+    <div class="card"><div class="label">向量库</div><div class="val val-blue" id="sKBs">-</div></div>
+    <div class="card"><div class="label">总向量</div><div class="val val-green" id="sVecs">-</div></div>
+    <div class="card"><div class="label">维度</div><div class="val val-amber">1024</div></div>
+    <div class="card"><div class="label">存储</div><div class="val" style="font-size:14px;color:var(--green)">SQLite 磁盘</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hd"><span>知识库列表</span></div>
+    <table><thead><tr><th>ID</th><th>名称</th><th>向量数</th><th>操作</th></tr></thead>
+    <tbody id="kbList"><tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px">加载中...</td></tr></tbody></table>
+  </div>
+
+  <div class="panel" id="detailPanel" style="display:none">
+    <div class="panel-hd">
+      <span id="detailTitle">Chunks</span>
+      <div class="flex">
+        <input class="inp" id="searchInp" placeholder="搜索..." style="width:180px" onkeyup="event.key==='Enter'&&doSearch()">
+        <button class="btn btn-b" onclick="doSearch()">搜索</button>
+        <button class="btn btn-r" onclick="clearKB()">清空KB</button>
+        <button class="btn btn-o" onclick="closeDetail()">关闭</button>
+      </div>
+    </div>
+    <div class="chunk-list" id="detailBody"></div>
+    <div id="searchResults" style="padding:12px"></div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>编辑 Chunk</h3>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">KB <span id="ekb"></span> / Chunk <span id="ecid"></span></div>
+    <textarea id="econtent"></textarea>
+    <div class="flex" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn" style="background:var(--muted);color:#000" onclick="closeEdit()">取消</button>
+      <button class="btn btn-b" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='';let curKB=null;_ed={};
+
+function t(){document.getElementById('timeNow').textContent=new Date().toLocaleString()}
+setInterval(t,3e4);t();
+
+async function api(url,opts={}){
+  const r=await fetch(API+url,opts);
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function load(){
+  t();
+  const d=await api('/api/rag/embedding/collections');
+  document.getElementById('sKBs').textContent=d.total_collections;
+  document.getElementById('sVecs').textContent=d.total_vectors;
+  const tb=document.getElementById('kbList');
+  if(!d.collections.length){tb.innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px">暂无数据，处理文档后自动创建</td></tr>';return}
+  tb.innerHTML=d.collections.map(c=>`<tr>
+    <td><span class="tag tag-b">${c.kb_id}</span></td>
+    <td><b>${c.name}</b></td>
+    <td><span class="tag tag-g">${c.vectors}</span></td>
+    <td>
+      <button class="btn btn-b btn-m" onclick="openKB(${c.kb_id})">Chunks</button>
+      <button class="btn btn-r btn-m" onclick="dropKB(${c.kb_id})">删除</button>
+    </td></tr>`).join('');
+}
+
+async function openKB(kbId){
+  curKB=kbId;
+  const d=await api(`/api/rag/embedding/chunks/${kbId}`);
+  document.getElementById('detailPanel').style.display='block';
+  document.getElementById('detailTitle').textContent=`KB ${kbId} · ${d.total} chunks`;
+  document.getElementById('searchResults').innerHTML='';
+  document.getElementById('searchInp').value='';
+  const body=document.getElementById('detailBody');
+  if(!d.chunks.length){body.innerHTML='<div style="padding:24px;color:var(--muted);text-align:center">暂无chunk</div>';return}
+  body.innerHTML=d.chunks.map(c=>`<div class="chunk-row">
+    <div class="chunk-text">[${c.chunk_id}] ${esc(c.content||'')}</div>
+    <div class="flex" style="flex-shrink:0">
+      <button class="btn btn-b btn-m" onclick="editChunk(${kbId},${c.chunk_id})">编辑</button>
+      <button class="btn btn-r btn-m" onclick="delChunk(${kbId},${c.chunk_id})">删除</button>
+    </div></div>`).join('');
+  window.scrollTo(0,document.getElementById('detailPanel').offsetTop);
+}
+
+function closeDetail(){document.getElementById('detailPanel').style.display='none';curKB=null}
+async function dropKB(id){if(!confirm(`删除 KB ${id}？`))return;await api(`/api/rag/embedding/drop/${id}`,{method:'DELETE'});closeDetail();load()}
+async function clearKB(){if(!curKB)return;if(!confirm(`清空 KB ${curKB} 的所有向量？`))return;await api(`/api/rag/embedding/clear/${curKB}`,{method:'DELETE'});openKB(curKB);load()}
+
+async function doSearch(){
+  if(curKB==null)return;
+  const q=document.getElementById('searchInp').value.trim();
+  if(!q)return;
+  const d=await api('/api/rag/search/debug',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kb_id:Number(curKB),query:q,top_k:5})});
+  const dv=document.getElementById('searchResults');
+  if(!d.hits.length){dv.innerHTML='<div style="padding:12px;color:var(--muted)">无匹配</div>';return}
+  dv.innerHTML=d.hits.map((h,i)=>`<div class="hit-row">
+    <div class="meta">#${i+1} · 相似度 ${(h.score*100).toFixed(1)}% · Chunk#${h.chunk_id}</div>
+    <div class="content">${esc(h.content)}</div></div>`).join('');
+}
+
+function editChunk(kbId,chunkId){
+  _ed={kbId,chunkId};
+  const rows=document.querySelectorAll('.chunk-row');
+  for(const row of rows){
+    const t=row.querySelector('.chunk-text').textContent;
+    if(t.includes(`[${chunkId}]`)){
+      document.getElementById('econtent').value=t.replace(/^\[\\d+\\]\\s*/,'').trim();
+      break;
+    }
+  }
+  document.getElementById('ekb').textContent=kbId;
+  document.getElementById('ecid').textContent=chunkId;
+  document.getElementById('editModal').classList.add('show');
+}
+function closeEdit(){document.getElementById('editModal').classList.remove('show')}
+async function saveEdit(){
+  await api('/api/rag/embedding/chunk',{
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({kb_id:_ed.kbId,chunk_id:_ed.chunkId,content:document.getElementById('econtent').value})
+  });
+  closeEdit();openKB(_ed.kbId);
+}
+async function delChunk(kbId,chunkId){
+  if(!confirm(`删除 Chunk ${chunkId}？`))return;
+  await api(`/api/rag/embedding/chunk/${kbId}/${chunkId}`,{method:'DELETE'});
+  openKB(kbId);load();
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+load();
+</script>
+</body>
+</html>

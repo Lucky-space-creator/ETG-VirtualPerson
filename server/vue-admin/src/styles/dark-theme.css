@@ -1,0 +1,161 @@
+/* 深色主题全局样式 - 使用CSS变量 */
+
+/* 全局背景 */
+[data-theme="dark"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Card样式 */
+[data-theme="dark"] .el-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-primary) !important;
+  border-radius: 12px !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .el-card__header {
+  border-bottom: 1px solid var(--border-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Table样式 */
+[data-theme="dark"] .el-table {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .el-table th.el-table__cell {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--border-secondary) !important;
+}
+
+[data-theme="dark"] .el-table td.el-table__cell {
+  border-bottom: 1px solid var(--border-secondary) !important;
+}
+
+[data-theme="dark"] .el-table--enable-row-hover .el-table__body tr:hover>td.el-table__cell {
+  background: var(--bg-hover) !important;
+}
+
+[data-theme="dark"] .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Button样式 */
+[data-theme="dark"] .el-button--default {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-input) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .el-button--default:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Input样式 */
+[data-theme="dark"] .el-input__wrapper {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-input) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .el-input__wrapper:hover {
+  border-color: rgba(102, 126, 234, 0.5) !important;
+}
+
+[data-theme="dark"] .el-input__wrapper.is-focus {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
+[data-theme="dark"] .el-input__inner {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .el-input__inner::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Select样式 */
+[data-theme="dark"] .el-select__wrapper {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-input) !important;
+}
+
+[data-theme="dark"] .el-select-dropdown {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-primary) !important;
+}
+
+[data-theme="dark"] .el-select-dropdown__item {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .el-select-dropdown__item:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Dialog样式 */
+[data-theme="dark"] .el-dialog {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-primary) !important;
+}
+
+[data-theme="dark"] .el-dialog__header {
+  border-bottom: 1px solid var(--border-secondary) !important;
+}
+
+[data-theme="dark"] .el-dialog__title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .el-dialog__body {
+  color: var(--text-primary) !important;
+}
+
+/* Form样式 */
+[data-theme="dark"] .el-form-item__label {
+  color: var(--text-secondary) !important;
+}
+
+/* Tag样式 */
+[data-theme="dark"] .el-tag--info {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border-input) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Radio样式 */
+[data-theme="dark"] .el-radio-button__inner {
+  background: var(--bg-input) !important;
+  border-color: var(--border-input) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Checkbox样式 */
+[data-theme="dark"] .el-checkbox__inner {
+  background: var(--bg-input) !important;
+  border-color: var(--border-input) !important;
+}
+
+/* Scrollbar样式 */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 浅色主题特定样式 */
+[data-theme="light"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .el-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-primary) !important;
+}

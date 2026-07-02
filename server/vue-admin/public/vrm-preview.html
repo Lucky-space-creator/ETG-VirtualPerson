@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRM模型预览</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #e2e8f0;
+            font-size: 14px;
+            text-align: center;
+        }
+        .loading .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 16px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .controls {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+        .controls button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.15);
+            color: #e2e8f0;
+            cursor: pointer;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
+        .controls button:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        .info {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            color: rgba(255,255,255,0.6);
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <span>加载模型中...</span>
+    </div>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <button onclick="playAction('nod')">点头</button>
+        <button onclick="playAction('wave')">招手</button>
+        <button onclick="playAction('bow')">鞠躬</button>
+        <button onclick="playAction('happy')">开心</button>
+        <button onclick="playAction('sad')">悲伤</button>
+        <button onclick="playAction('think')">思考</button>
+        <button onclick="playAction('explain')">解释</button>
+    </div>
+    <div class="info" id="info"></div>
+
+    <script src="/lib/three.min.js"></script>
+    <script src="/lib/GLTFLoader.js"></script>
+    <script src="/lib/three-vrm.min.js"></script>
+    <script>
+        let scene, camera, renderer, vrmModel;
+        let isLoaded = false;
+
+        // 获取URL参数中的模型URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const modelUrl = urlParams.get('model');
+        console.log('[VRM Preview] Model URL:', modelUrl);
+
+        function init() {
+            console.log('[VRM Preview] Initializing...');
+            const canvas = document.getElementById('canvas');
+
+            // 场景
+            scene = new THREE.Scene();
+
+            // 相机
+            camera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.3, 2.0);
+            camera.lookAt(0, 1.0, 0);
+
+            // 渲染器
+            renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.setClearColor(0x000000, 0);
+
+            // 灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            mainLight.position.set(2, 3, 4);
+            scene.add(mainLight);
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            fillLight.position.set(-2, 2, -3);
+            scene.add(fillLight);
+
+            // 加载模型
+            if (modelUrl) {
+                console.log('[VRM Preview] Loading model:', modelUrl);
+                loadModel(modelUrl);
+            } else {
+                console.log('[VRM Preview] No model URL provided');
+                document.getElementById('loading').innerHTML =
+                    '<div style="color:#94a3b8">未提供模型URL</div>';
+            }
+
+            // 窗口大小变化
+            window.addEventListener('resize', onResize);
+
+            // 开始动画循环
+            animate();
+            console.log('[VRM Preview] Initialization complete');
+        }
+
+        async function loadModel(url) {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('info').textContent = '加载模型: ' + url.split('/').pop();
+                console.log('[VRM Preview] Starting to load model:', url);
+
+                const loader = new THREE.GLTFLoader();
+                loader.register((parser) => new THREE.VRMLoaderPlugin(parser));
+
+                const gltf = await new Promise((resolve, reject) => {
+                    loader.load(
+                        url,
+                        (gltf) => {
+                            console.log('[VRM Preview] GLTF loaded successfully');
+                            resolve(gltf);
+                        },
+                        (progress) => {
+                            if (progress.total > 0) {
+                                const percent = Math.round((progress.loaded / progress.total) * 100);
+                                document.getElementById('info').textContent = '加载中: ' + percent + '%';
+                            }
+                        },
+                        (error) => {
+                            console.error('[VRM Preview] GLTF load error:', error);
+                            reject(error);
+                        }
+                    );
+                });
+
+                const vrm = gltf.userData.vrm;
+                if (!vrm) {
+                    throw new Error('不是有效的VRM模型');
+                }
+
+                console.log('[VRM Preview] VRM parsed successfully');
+                vrmModel = vrm;
+
+                // 调整模型大小和位置
+                const box = new THREE.Box3().setFromObject(vrm.scene);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+
+                console.log('[VRM Preview] Model size:', size);
+
+                const targetHeight = 0.9;
+                const scale = targetHeight / size.y;
+                vrm.scene.scale.setScalar(scale);
+
+                vrm.scene.position.set(-center.x * scale, -box.min.y * scale, 0);
+                vrm.scene.rotation.y = Math.PI;
+
+                // 调整手臂姿势
+                adjustArmPose(vrm);
+
+                scene.add(vrm.scene);
+
+                // 调整相机 - 居中显示
+                const centerY = (box.min.y + box.max.y) / 2 * scale;
+                camera.position.set(0, centerY, 2.0);
+                camera.lookAt(0, centerY, 0);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('info').textContent = '模型加载完成: ' + url.split('/').pop();
+                isLoaded = true;
+                console.log('[VRM Preview] Model loaded successfully');
+
+            } catch (error) {
+                console.error('[VRM Preview] Load failed:', error);
+                document.getElementById('loading').innerHTML =
+                    '<div style="color:#f56c6c">加载失败: ' + error.message + '<br><small>' + url + '</small></div>';
+            }
+        }
+
+        // VRM骨骼调试：先用小值测试方向，再逐步增大
+        function adjustArmPose(vrm) {
+            const h = vrm.humanoid;
+            if (!h) return;
+
+            // 上臂：从T-pose旋转到自然下垂
+            // VRM T-pose: 手臂水平伸展
+            // 需要找到正确的旋转轴和方向
+            const leftUpperArm = h.getNormalizedBoneNode('leftUpperArm');
+            const rightUpperArm = h.getNormalizedBoneNode('rightUpperArm');
+
+            if (leftUpperArm) {
+                // 先打印当前旋转值
+                console.log('[VRM] Left upper arm initial:',
+                    'x=' + leftUpperArm.rotation.x.toFixed(2),
+                    'y=' + leftUpperArm.rotation.y.toFixed(2),
+                    'z=' + leftUpperArm.rotation.z.toFixed(2));
+                // 尝试绕Z轴旋转
+                leftUpperArm.rotation.set(0, 0, 1.4);
+            }
+            if (rightUpperArm) {
+                console.log('[VRM] Right upper arm initial:',
+                    'x=' + rightUpperArm.rotation.x.toFixed(2),
+                    'y=' + rightUpperArm.rotation.y.toFixed(2),
+                    'z=' + rightUpperArm.rotation.z.toFixed(2));
+                rightUpperArm.rotation.set(0, 0, -1.4);
+            }
+
+            // 前臂
+            const leftLowerArm = h.getNormalizedBoneNode('leftLowerArm');
+            const rightLowerArm = h.getNormalizedBoneNode('rightLowerArm');
+            if (leftLowerArm) leftLowerArm.rotation.set(0, 0, 0);
+            if (rightLowerArm) rightLowerArm.rotation.set(0, 0, 0);
+        }
+
+        // 动作测试：使用小幅增量，避免过度旋转
+        function playAction(action) {
+            if (!vrmModel || !vrmModel.humanoid) return;
+            const h = vrmModel.humanoid;
+
+            // 基础姿势值
+            const BASE_LEFT_Z = 1.4;
+            const BASE_RIGHT_Z = -1.4;
+
+            switch(action) {
+                case 'nod':
+                    // 点头：头部前后摆动
+                    animateBone(h, 'head', 'x', 0, -0.12, 400);
+                    break;
+                case 'wave':
+                    // 招手：右臂抬起到头顶位置，然后手腕摆动
+                    animateBone(h, 'rightUpperArm', 'z', BASE_RIGHT_Z, -2.8, 500);
+                    animateBone(h, 'rightHand', 'z', 0, 0.4, 400);
+                    break;
+                case 'bow':
+                    // 鞠躬：脊柱后仰，头部微低
+                    animateBone(h, 'spine', 'x', 0, -0.15, 600);
+                    animateBone(h, 'head', 'x', 0, 0.1, 600);
+                    break;
+                case 'happy':
+                    // 开心：头部微动，手臂轻微抬起
+                    animateBone(h, 'head', 'x', 0, -0.06, 300);
+                    animateBone(h, 'leftUpperArm', 'z', BASE_LEFT_Z, 1.6, 400);
+                    animateBone(h, 'rightUpperArm', 'z', BASE_RIGHT_Z, -1.6, 400);
+                    break;
+                case 'sad':
+                    // 悲伤：头部低垂，手臂下垂
+                    animateBone(h, 'head', 'x', 0, 0.1, 500);
+                    animateBone(h, 'spine', 'x', 0, 0.06, 500);
+                    break;
+                case 'think':
+                    // 思考：头微歪，右手抬起托下巴
+                    animateBone(h, 'head', 'z', 0, 0.06, 400);
+                    animateBone(h, 'rightUpperArm', 'z', BASE_RIGHT_Z, -1.8, 500);
+                    animateBone(h, 'rightLowerArm', 'x', 0, -0.8, 500);
+                    break;
+                case 'explain':
+                    // 解释：右手轻微抬起做手势
+                    animateBone(h, 'rightUpperArm', 'z', BASE_RIGHT_Z, -1.6, 500);
+                    animateBone(h, 'rightLowerArm', 'x', 0, -0.3, 500);
+                    break;
+            }
+        }
+
+        function animateBone(humanoid, boneName, axis, from, to, duration) {
+            const bone = humanoid.getNormalizedBoneNode(boneName);
+            if (!bone) return;
+
+            const startTime = Date.now();
+            const animate = () => {
+                const progress = Math.min((Date.now() - startTime) / duration, 1);
+                const eased = progress < 0.5
+                    ? 4 * progress * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                bone.rotation[axis] = from + (to - from) * eased;
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            };
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = 1/60;
+
+            if (vrmModel) {
+                if (vrmModel.update) {
+                    vrmModel.update(delta);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // 监听父页面消息（用于动作测试按钮）
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'playAction') {
+                playAction(event.data.action);
+            }
+        });
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>

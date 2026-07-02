@@ -1,0 +1,83 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/admin
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: virtualwife-admin
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/virtualwife_admin?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 3
+      password:
+      timeout: 5000ms
+  cache:
+    type: simple
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 200MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath*:/mapper/**/*.xml
+
+# JWT
+jwt:
+  secret: VirtualWifeAdmin2024SecretKeyForJWTTokenGenerationAndValidation
+  expiration: 86400000
+
+# 虚拟数字人系统配置
+virtualwife:
+  django:
+    api-url: http://localhost:8000
+  rag:
+    api-url: http://localhost:5001
+  minio:
+    endpoint: http://localhost:9000
+    external-endpoint: http://10.0.2.2:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: virtual-knowledge
+
+# Knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'VirtualWife Admin API'
+      paths-to-match: '/**'
+      packages-to-scan: com.virtualwife.admin

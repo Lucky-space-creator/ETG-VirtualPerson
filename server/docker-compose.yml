@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # Spring Boot 管理后台
+  admin-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: virtualwife-admin-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - REDIS_HOST=redis
+      - JWT_SECRET=VirtualWifeAdmin2024SecretKeyForJWTToken
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Vue 3 管理前端
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: virtualwife-admin-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - admin-backend
+    restart: unless-stopped
+
+  # MySQL 8.0
+  mysql:
+    image: mysql:8.0
+    container_name: virtualwife-admin-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=virtualwife_admin
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./springboot-admin/src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis 7
+  redis:
+    image: redis:7-alpine
+    container_name: virtualwife-admin-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

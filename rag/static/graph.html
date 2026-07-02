@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识图谱 - Agentic RAG</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column}
+.header{background:#1e293b;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #334155;flex-shrink:0}
+.header h1{font-size:16px;color:#38bdf8}
+.header .kb-select{display:flex;align-items:center;gap:8px}
+.header select,.header button{padding:5px 12px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer;font-size:13px;outline:none}
+.header select:focus{border-color:#38bdf8}
+.header button{background:#0284c7;border-color:#0284c7}
+.header button:hover{background:#0369a1}
+.stats{display:flex;gap:16px;padding:8px 20px;background:#1a2332;border-bottom:1px solid #334155;font-size:12px;flex-shrink:0;flex-wrap:wrap}
+.stat-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.stat-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.stat-item .dot.building{background:#38bdf8}
+.stat-item .dot.person{background:#f59e0b}
+.stat-item .dot.location{background:#10b981}
+.stat-item .dot.time{background:#8b5cf6}
+.stat-item .dot.event{background:#f43f5e}
+.stat-item .dot.scenery{background:#06b6d4}
+.stat-item .dot.price{background:#84cc16}
+#chartContainer{flex:1;position:relative;min-height:0}
+#chartContainer .loading,#chartContainer .empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#64748b;text-align:center;z-index:5}
+#chartContainer .empty p{margin:4px 0}
+.sidebar{position:fixed;top:120px;right:10px;width:280px;max-height:calc(100vh - 140px);overflow-y:auto;background:#1e293bee;backdrop-filter:blur(8px);border-radius:10px;padding:14px;font-size:12px;display:none;z-index:20;border:1px solid #334155}
+.sidebar h3{color:#38bdf8;margin-bottom:8px;font-size:14px}
+.sidebar .info-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #33415533}
+.sidebar .info-row span:first-child{color:#94a3b8}
+.sidebar .close-btn{position:absolute;top:8px;right:10px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>&#x1F9E0; 知识图谱</h1>
+  <div class="kb-select">
+    <span style="color:#94a3b8;font-size:12px">知识库:</span>
+    <select id="kbSelect" onchange="loadGraph()"><option value="1">加载中...</option></select>
+    <button onclick="loadGraph()">刷新</button>
+    <a href="/static/index.html" style="color:#94a3b8;text-decoration:none;font-size:12px;padding:5px 10px;border:1px solid #475569;border-radius:6px">向量库</a>
+  </div>
+</div>
+<div class="stats" id="statsBar" style="display:none">
+  <div class="stat-item"><span class="dot building"></span>建筑:<b id="cntBuilding">0</b></div>
+  <div class="stat-item"><span class="dot person"></span>人物:<b id="cntPerson">0</b></div>
+  <div class="stat-item"><span class="dot location"></span>地点:<b id="cntLocation">0</b></div>
+  <div class="stat-item"><span class="dot time"></span>时间:<b id="cntTime">0</b></div>
+  <div class="stat-item"><span class="dot event"></span>事件:<b id="cntEvent">0</b></div>
+  <div class="stat-item"><span class="dot scenery"></span>景观:<b id="cntScenery">0</b></div>
+  <span style="margin-left:auto;color:#64748b">节点:<b id="cntTotalNodes">0</b> | 边:<b id="cntTotalEdges">0</b></span>
+</div>
+<div id="chartContainer">
+  <div class="loading" id="loadingMsg">加载知识库列表...</div>
+</div>
+<div class="sidebar" id="sidebar">
+  <button class="close-btn" onclick="document.getElementById('sidebar').style.display='none'">&#x2715;</button>
+  <h3 id="sideTitle">节点详情</h3>
+  <div id="sideContent"></div>
+</div>
+
+<script>
+const API = 'http://localhost:5001';
+const typeColors = {
+  building:'#38bdf8',person:'#f59e0b',location:'#10b981',
+  time:'#8b5cf6',event:'#f43f5e',scenery:'#06b6d4',price:'#84cc16'
+};
+
+let chart = null;
+
+function getChartDom() {
+  // 确保 chartContainer 中有干净的 div 给 ECharts
+  const container = document.getElementById('chartContainer');
+  let div = container.querySelector('.echart-inner');
+  if (!div) {
+    div = document.createElement('div');
+    div.className = 'echart-inner';
+    div.style.width = '100%';
+    div.style.height = '100%';
+    container.appendChild(div);
+  }
+  return div;
+}
+
+function showMsg(html) {
+  const container = document.getElementById('chartContainer');
+  container.innerHTML = html;
+  chart = null;
+}
+
+function showLoading(msg) {
+  showMsg(`<div class="loading">${msg}</div>`);
+}
+
+function showEmpty(msg, hint) {
+  showMsg(`<div class="empty"><p>${msg}</p><p style="font-size:12px;color:#94a3b8">${hint||''}</p></div>`);
+  document.getElementById('statsBar').style.display = 'none';
+}
+
+function showError(msg) {
+  showMsg(`<div class="empty"><p style="color:#f43f5e">${msg}</p></div>`);
+  document.getElementById('statsBar').style.display = 'none';
+}
+
+async function loadKBs() {
+  showLoading('加载知识库列表...');
+  try {
+    const r = await fetch(`${API}/api/rag/embedding/collections`);
+    const d = await r.json();
+    const sel = document.getElementById('kbSelect');
+    sel.innerHTML = '';
+
+    if (!d.collections || d.collections.length === 0) {
+      showEmpty('暂无知识库数据', '请先在管理后台处理文档');
+      return;
+    }
+
+    let firstWithData = null;
+    d.collections.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.kb_id;
+      opt.textContent = `${c.name} (${c.vectors} vectors)`;
+      if (c.vectors > 0 && !firstWithData) firstWithData = c.kb_id;
+      sel.appendChild(opt);
+    });
+
+    if (firstWithData) sel.value = firstWithData;
+    loadGraph();
+  } catch(e) {
+    showError('RAG 服务不可用: ' + e.message);
+  }
+}
+
+async function loadGraph() {
+  const kb = document.getElementById('kbSelect').value;
+  showLoading('构建知识图谱...');
+
+  try {
+    const r = await fetch(`${API}/api/rag/graph/${kb}`);
+    const graph = await r.json();
+
+    if (!graph.nodes || graph.nodes.length === 0) {
+      showEmpty('该知识库暂无实体数据', '处理文档后将自动抽取实体关系，请选择其他知识库或刷新');
+      return;
+    }
+
+    // 显示统计栏
+    const statsBar = document.getElementById('statsBar');
+    statsBar.style.display = 'flex';
+
+    const typeCount = {};
+    graph.nodes.forEach(n => { typeCount[n.type] = (typeCount[n.type]||0)+1; });
+    document.getElementById('cntBuilding').textContent = typeCount['building']||0;
+    document.getElementById('cntPerson').textContent = typeCount['person']||0;
+    document.getElementById('cntLocation').textContent = typeCount['location']||0;
+    document.getElementById('cntTime').textContent = typeCount['time']||0;
+    document.getElementById('cntEvent').textContent = typeCount['event']||0;
+    document.getElementById('cntScenery').textContent = typeCount['scenery']||0;
+    document.getElementById('cntTotalNodes').textContent = graph.nodes.length;
+    document.getElementById('cntTotalEdges').textContent = graph.edges.length;
+
+    // 销毁旧图表
+    if (chart) { chart.dispose(); chart = null; }
+
+    // 清理容器
+    const container = document.getElementById('chartContainer');
+    container.innerHTML = '';
+
+    // 创建 ECharts 容器
+    const chartDiv = document.createElement('div');
+    chartDiv.style.width = '100%';
+    chartDiv.style.height = '100%';
+    container.appendChild(chartDiv);
+
+    // 初始化图表
+    chart = echarts.init(chartDiv);
+
+    // 构建数据
+    const nodes = graph.nodes.map(n => ({
+      id: n.name,
+      name: n.name,
+      symbolSize: Math.max(12, Math.min(50, 8 + n.count * 8)),
+      category: n.type,
+      itemStyle: { color: typeColors[n.type] || '#94a3b8' },
+      count: n.count,
+      chunkIds: n.chunkIds || [],
+      type: n.type
+    }));
+
+    const categories = [...new Set(graph.nodes.map(n => n.type))].map(t => ({
+      name: t,
+      itemStyle: { color: typeColors[t] || '#94a3b8' }
+    }));
+
+    const edges = graph.edges.map(e => ({
+      source: e.source,
+      target: e.target,
+      value: e.relation,
+      lineStyle: {
+        width: Math.max(0.5, Math.min(3, e.count * 0.5)),
+        opacity: 0.2 + Math.min(0.6, e.count * 0.1),
+        curveness: 0.1
+      },
+      label: {
+        show: false,
+        formatter: e.relation !== 'co_occur' ? e.relation : ''
+      }
+    }));
+
+    chart.setOption({
+      backgroundColor: '#0f172a',
+      tooltip: {
+        trigger: 'item',
+        formatter: p => {
+          if (p.dataType === 'node') {
+            return `<b>${p.data.name}</b><br/>类型: ${p.data.category}<br/>出现: ${p.data.count}次<br/>关联: ${(p.data.chunkIds||[]).length} chunks`;
+          }
+          return `${p.data.source} - ${p.data.target}`;
+        }
+      },
+      legend: [{
+        data: categories.map(c => c.name),
+        bottom: 4,
+        textStyle: { color: '#94a3b8', fontSize: 11 },
+        itemWidth: 10,
+        itemHeight: 10
+      }],
+      animationDuration: 1500,
+      animationEasingUpdate: 'quinticInOut',
+      series: [{
+        type: 'graph',
+        layout: 'force',
+        roam: true,
+        draggable: true,
+        categories,
+        nodes,
+        edges,
+        force: {
+          initIterations: 50,
+          repulsion: 200,
+          edgeLength: [80, 200],
+          gravity: 0.12,
+          friction: 0.6
+        },
+        label: {
+          show: true,
+          fontSize: 10,
+          color: '#e2e8f0',
+          position: 'right',
+          formatter: p => p.data.name.length > 5 ? p.data.name.slice(0,5)+'..' : p.data.name
+        },
+        emphasis: {
+          focus: 'adjacency',
+          label: { fontSize: 13, fontWeight: 'bold' },
+          itemStyle: { shadowBlur: 10, shadowColor: 'rgba(56,189,248,0.5)' }
+        }
+      }]
+    });
+
+    // 点击节点显示侧边栏
+    chart.off('click');
+    chart.on('click', params => {
+      if (params.dataType === 'node') {
+        const d = params.data;
+        const sidebar = document.getElementById('sidebar');
+        sidebar.style.display = 'block';
+        document.getElementById('sideTitle').textContent = d.name;
+        document.getElementById('sideContent').innerHTML =
+          `<div class="info-row"><span>类型</span><span style="color:${typeColors[d.category]}">${d.category}</span></div>
+           <div class="info-row"><span>出现次数</span><span>${d.count}</span></div>
+           <div class="info-row"><span>所在Chunk</span><span>${(d.chunkIds||[]).length} 个</span></div>
+           <div class="info-row"><span>相邻关系</span><span>${edges.filter(e=>e.source===d.name||e.target===d.name).length} 条</span></div>`;
+      }
+    });
+
+    // 点击空白关闭侧边栏
+    chart.on('click', params => {
+      if (!params.dataType) {
+        document.getElementById('sidebar').style.display = 'none';
+      }
+    });
+
+  } catch(e) {
+    showError('图谱加载失败: ' + e.message);
+    console.error(e);
+  }
+}
+
+window.addEventListener('resize', () => { if (chart) chart.resize(); });
+loadKBs();
+</script>
+</body>
+</html>

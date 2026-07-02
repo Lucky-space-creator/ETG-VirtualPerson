@@ -1,0 +1,89 @@
+/* 主题变量系统 */
+
+/* 浅色主题（默认） */
+:root {
+  /* 背景色 */
+  --bg-primary: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-header: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #f0f2f5;
+  --bg-active: #ecf5ff;
+
+  /* 文字色 */
+  --text-primary: #1a1a2e;
+  --text-secondary: #606266;
+  --text-muted: #909399;
+  --text-sidebar: #bfcbd9;
+  --text-sidebar-active: #409EFF;
+
+  /* 边框色 */
+  --border-primary: #e4e7ed;
+  --border-secondary: #f0f0f0;
+  --border-input: #dcdfe6;
+
+  /* 强调色 */
+  --accent-primary: #409EFF;
+  --accent-gradient: linear-gradient(135deg, #409EFF 0%, #337ecc 100%);
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+
+  /* 覆盖Element Plus变量 */
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-text-color-primary: #1a1a2e;
+  --el-text-color-regular: #606266;
+  --el-text-color-secondary: #909399;
+  --el-border-color: #e4e7ed;
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color-light: #f5f7fa;
+}
+
+/* 深色主题 */
+[data-theme="dark"] {
+  /* 背景色 */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: rgba(30, 41, 59, 0.8);
+  --bg-sidebar: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  --bg-header: #0f172a;
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(102, 126, 234, 0.2);
+
+  /* 文字色 */
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-sidebar: #94a3b8;
+  --text-sidebar-active: #667eea;
+
+  /* 边框色 */
+  --border-primary: rgba(255, 255, 255, 0.08);
+  --border-secondary: rgba(255, 255, 255, 0.05);
+  --border-input: rgba(255, 255, 255, 0.1);
+
+  /* 强调色 */
+  --accent-primary: #667eea;
+  --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+
+  /* 覆盖Element Plus变量 */
+  --el-bg-color: #1e293b;
+  --el-bg-color-overlay: #1e293b;
+  --el-text-color-primary: #e2e8f0;
+  --el-text-color-regular: #94a3b8;
+  --el-text-color-secondary: #64748b;
+  --el-border-color: rgba(255, 255, 255, 0.08);
+  --el-fill-color-blank: #1e293b;
+  --el-fill-color-light: #0f172a;
+}
