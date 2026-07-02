@@ -250,8 +250,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun selectRoute(routeId: Long, routeName: String) {
-        Log.d(TAG, "selectRoute: routeId=$routeId, routeName=$routeName")
-        _uiState.update { it.copy(selectedRouteId = routeId, selectedRouteName = routeName) }
+        Log.d(TAG, "===== selectRoute CALLED: routeId=$routeId, routeName=$routeName =====")
+        _uiState.update {
+            Log.d(TAG, "selectRoute update: oldId=${it.selectedRouteId}, newId=$routeId")
+            it.copy(selectedRouteId = routeId, selectedRouteName = routeName)
+        }
+        Log.d(TAG, "selectRoute done: stateId=${_uiState.value.selectedRouteId}")
         loadRouteSpots(routeId)
     }
 

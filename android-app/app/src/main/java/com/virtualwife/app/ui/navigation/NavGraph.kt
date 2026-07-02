@@ -91,8 +91,9 @@ fun NavGraph(
             RouteScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onRouteSelected = { route ->
-                    android.util.Log.d("NavGraph", "Route selected: id=${route.id}, name=${route.routeName}")
+                    android.util.Log.d("NavGraph", "===== onRouteSelected CALLBACK: id=${route.id}, name=${route.routeName} =====")
                     chatViewModel.selectRoute(route.id, route.routeName)
+                    android.util.Log.d("NavGraph", "selectRoute called, now popping back")
                     navController.popBackStack()
                 }
             )
