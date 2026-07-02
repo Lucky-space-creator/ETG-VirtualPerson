@@ -202,6 +202,7 @@ fun ChatScreen(
                         onNavigateToMap()
                     },
                     onViewMap = onNavigateToMap,
+                    onCancel = { chatViewModel.stopTour() },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
@@ -319,10 +320,10 @@ private fun TourProgressOverlay(
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
                     onClick = onCancelTour,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Icon(Icons.Filled.Close, "取消游览",
-                        tint = Color.Gray, modifier = Modifier.size(18.dp))
+                        tint = Color(0xFFE91E63), modifier = Modifier.size(20.dp))
                 }
             }
 
@@ -392,6 +393,7 @@ private fun RouteReadyCard(
     routeName: String,
     onStartTour: () -> Unit,
     onViewMap: () -> Unit = {},
+    onCancel: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -418,6 +420,13 @@ private fun RouteReadyCard(
                         color = Color(0xFF1C1B1F))
                     Text("路线已就绪，开始游览吧！",
                         style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+                IconButton(
+                    onClick = onCancel,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Filled.Close, "取消",
+                        tint = Color.Gray, modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
