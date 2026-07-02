@@ -180,40 +180,42 @@ fun ChatScreen(
 
         // ====== 悬浮层 ======
         Column(modifier = Modifier.fillMaxSize()) {
-            // 顶部栏
+            // 顶部栏（已选路线时显示路线名）
             TopBar(
                 avatarName = currentAvatarName,
+                routeName = uiState.selectedRouteName,
                 onRouteClick = onNavigateToRoute,
                 onSettingsClick = onNavigateToSettings
             )
 
-            // 中间区域：进度卡片 + 查看地图按钮
+            // 中间区域：路线状态卡片 + 地图按钮
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                // 游览进度卡片（悬浮在数字人上方）
-                if (isTourActive) {
-                    TourProgressOverlay(
-                        uiState = uiState,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                when {
+                    // 游览中：显示进度
+                    isTourActive -> {
+                        TourProgressOverlay(
+                            uiState = uiState,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    // 已选路线未开始：显示开始按钮
+                    uiState.selectedRouteId != null -> {
+                        RouteReadyCard(
+                            routeName = uiState.selectedRouteName ?: "",
+                            onStartTour = {
+                                chatViewModel.startTour()
+                                onNavigateToMap()
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                 }
 
-                // 选择路线后 + 未开始游览：显示路线信息 + 开始按钮
-                if (uiState.selectedRouteId != null && !isTourActive) {
-                    RouteReadyCard(
-                        routeName = uiState.selectedRouteName ?: "",
-                        onStartTour = {
-                            chatViewModel.startTour()
-                            onNavigateToMap()
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-
-                // 查看地图按钮（右下角浮动）
+                // 地图按钮（有路线时显示）
                 if (uiState.selectedRouteId != null) {
                     FloatingActionButton(
                         onClick = onNavigateToMap,
@@ -254,6 +256,7 @@ fun ChatScreen(
 @Composable
 private fun TopBar(
     avatarName: String,
+    routeName: String? = null,
     onRouteClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -275,9 +278,16 @@ private fun TopBar(
             Text(avatarName,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = Color.White)
-            Text("在线陪你逛",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.8f))
+            // 已选路线时显示路线名，否则显示默认文字
+            if (routeName != null) {
+                Text("🗺️ $routeName",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFFFD700))
+            } else {
+                Text("在线陪你逛",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.8f))
+            }
         }
         IconButton(onClick = onSettingsClick) {
             Icon(Icons.Filled.Settings, "设置", tint = Color.White)
@@ -389,32 +399,39 @@ private fun RouteReadyCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.92f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.Route, null,
-                tint = Color(0xFFE91E63), modifier = Modifier.size(24.dp))
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(routeName,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF1C1B1F))
-                Text("路线已就绪，点击开始游览",
-                    style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Card(
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE91E63).copy(alpha = 0.1f))
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.Route, null, tint = Color(0xFFE91E63), modifier = Modifier.size(22.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(routeName,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFF1C1B1F))
+                    Text("路线已就绪，开始游览吧！",
+                        style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
             }
+            Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onStartTour,
+                modifier = Modifier.fillMaxWidth().height(44.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63)),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63))
             ) {
-                Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("开始", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Icon(Icons.Filled.PlayArrow, null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("开始游览", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
     }
