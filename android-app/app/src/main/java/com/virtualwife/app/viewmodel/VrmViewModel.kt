@@ -145,12 +145,7 @@ class VrmViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setWebViewBridge(bridge: (String) -> Unit) {
         webViewBridge = bridge
-        // Bridge就绪后立即加载模型
-        val url = _uiState.value.modelUrl
-        if (url.isNotEmpty()) {
-            bridge("loadModel('$url')")
-        }
-        // 传递动画配置
+        // 传递动画配置（模型加载由LaunchedEffect统一处理）
         val avatar = resourceManager.defaultAvatar
         if (avatar != null) {
             bridge("updateConfig(${avatar.armAngle}, '${avatar.idleAnimation}', '${avatar.talkAnimation}', ${avatar.animationIntensity})")

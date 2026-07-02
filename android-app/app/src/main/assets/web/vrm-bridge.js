@@ -64,6 +64,13 @@ const VRMBridge = {
     },
 
     async loadModel(url) {
+        // 防止并发加载
+        if (this._isLoading) {
+            console.log('[VRM] Already loading, skip');
+            return;
+        }
+        this._isLoading = true;
+
         try {
             // 如果同一个模型已显示，跳过
             if (url === this._currentUrl && this.vrmModel) {
@@ -177,6 +184,8 @@ const VRMBridge = {
             if (window.AndroidBridge && window.AndroidBridge.onError) {
                 window.AndroidBridge.onError(e.message);
             }
+        } finally {
+            this._isLoading = false;
         }
     },
 
