@@ -150,7 +150,7 @@ fun MapScreen(
                             polylineOptions.add(LatLng(spot.latitude, spot.longitude))
                         }
                         polylineOptions.width(8f)
-                        polylineOptions.color(Color.parseColor("#4FC3F7"))
+                        polylineOptions.color(android.graphics.Color.parseColor("#4FC3F7"))
                         polylineOptions.setDottedLine(true)
                         map.addPolyline(polylineOptions)
                     }
