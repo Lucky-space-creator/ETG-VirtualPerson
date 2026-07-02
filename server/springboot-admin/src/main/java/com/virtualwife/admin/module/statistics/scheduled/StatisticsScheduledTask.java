@@ -31,14 +31,52 @@ public class StatisticsScheduledTask {
      */
     @Scheduled(cron = "0 0 1 * * ?")
     public void dailyStatistics() {
-        log.info("开始每日统计...");
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        log.info("开始每日统计, date={}", yesterday);
+        saveDailyStats(yesterday);
+    }
+
+    /**
+     * 补全指定天数的历史数据（启动时调用）
+     */
+    public void backfillHistory(int days) {
+        log.info("补全近{}天历史统计数据...", days);
+        for (int i = days; i >= 1; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            // 跳过已存在的日期
+            StatisticsDaily existing = statisticsDailyMapper.selectOne(
+                    new LambdaQueryWrapper<StatisticsDaily>().eq(StatisticsDaily::getStatDate, date));
+            if (existing == null) {
+                saveDailyStats(date);
+            }
+        }
+        log.info("历史数据补全完成");
+    }
+
+    /**
+     * 手动触发指定日期的统计
+     */
+    public boolean triggerDailyStats(LocalDate date) {
+        log.info("手动触发统计, date={}", date);
         try {
-            LocalDate yesterday = LocalDate.now().minusDays(1);
-            LocalDateTime startOfDay = yesterday.atStartOfDay();
-            LocalDateTime endOfDay = yesterday.plusDays(1).atStartOfDay();
+            saveDailyStats(date);
+            return true;
+        } catch (Exception e) {
+            log.error("手动统计失败", e);
+            return false;
+        }
+    }
+
+    /**
+     * 统计并保存指定日期的日报数据
+     */
+    private void saveDailyStats(LocalDate date) {
+        try {
+            LocalDateTime startOfDay = date.atStartOfDay();
+            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
 
             StatisticsDaily daily = new StatisticsDaily();
-            daily.setStatDate(yesterday);
+            daily.setStatDate(date);
 
             // 用户统计
             Long totalUsers = userMapper.selectCount(new LambdaQueryWrapper<User>()
@@ -73,9 +111,9 @@ public class StatisticsScheduledTask {
             daily.setAvgSessionCount(BigDecimal.ZERO);
             daily.setTotalTokens(0L);
 
-            // 检查是否已存在，存在则更新
+            // 存在则更新，不存在则插入
             StatisticsDaily existing = statisticsDailyMapper.selectOne(
-                    new LambdaQueryWrapper<StatisticsDaily>().eq(StatisticsDaily::getStatDate, yesterday));
+                    new LambdaQueryWrapper<StatisticsDaily>().eq(StatisticsDaily::getStatDate, date));
             if (existing != null) {
                 daily.setId(existing.getId());
                 statisticsDailyMapper.updateById(daily);
@@ -83,9 +121,9 @@ public class StatisticsScheduledTask {
                 statisticsDailyMapper.insert(daily);
             }
 
-            log.info("每日统计完成, date={}", yesterday);
+            log.info("每日统计完成, date={}", date);
         } catch (Exception e) {
-            log.error("每日统计失败", e);
+            log.error("每日统计失败, date={}", date, e);
         }
     }
 }

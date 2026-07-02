@@ -58,26 +58,42 @@ public class StatisticsService extends com.baomidou.mybatisplus.extension.servic
     public List<Map<String, Object>> getTrend(int days) {
         List<Map<String, Object>> trend = new ArrayList<>();
         LocalDate today = LocalDate.now();
+
+        // 批量查询已缓存的日报数据
+        LocalDate startDate = today.minusDays(days - 1);
+        List<StatisticsDaily> cachedList = statisticsDailyMapper.selectList(
+                new LambdaQueryWrapper<StatisticsDaily>()
+                        .ge(StatisticsDaily::getStatDate, startDate)
+                        .le(StatisticsDaily::getStatDate, today)
+        );
+        Map<LocalDate, StatisticsDaily> cachedMap = cachedList.stream()
+                .collect(Collectors.toMap(StatisticsDaily::getStatDate, d -> d));
+
         for (int i = days - 1; i >= 0; i--) {
             LocalDate date = today.minusDays(i);
-            LocalDateTime startOfDay = date.atStartOfDay();
-            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
             Map<String, Object> point = new HashMap<>();
             point.put("date", date.toString());
 
-            long messages = chatRecordMapper.selectCount(
-                    new LambdaQueryWrapper<ChatRecord>()
-                            .ge(ChatRecord::getCreateTime, startOfDay)
-                            .lt(ChatRecord::getCreateTime, endOfDay)
-            );
-            point.put("messages", messages);
-
-            long users = userMapper.selectCount(
-                    new LambdaQueryWrapper<User>()
-                            .ge(User::getCreateTime, startOfDay)
-                            .lt(User::getCreateTime, endOfDay)
-            );
-            point.put("newUsers", users);
+            // 优先从缓存表读取
+            StatisticsDaily cached = cachedMap.get(date);
+            if (cached != null) {
+                point.put("messages", cached.getTotalMessages() != null ? cached.getTotalMessages() : 0);
+                point.put("newUsers", cached.getNewUsers() != null ? cached.getNewUsers() : 0);
+            } else {
+                // 缓存缺失，实时计算
+                LocalDateTime startOfDay = date.atStartOfDay();
+                LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+                long messages = chatRecordMapper.selectCount(
+                        new LambdaQueryWrapper<ChatRecord>()
+                                .ge(ChatRecord::getCreateTime, startOfDay)
+                                .lt(ChatRecord::getCreateTime, endOfDay));
+                long users = userMapper.selectCount(
+                        new LambdaQueryWrapper<User>()
+                                .ge(User::getCreateTime, startOfDay)
+                                .lt(User::getCreateTime, endOfDay));
+                point.put("messages", messages);
+                point.put("newUsers", users);
+            }
 
             trend.add(point);
         }
