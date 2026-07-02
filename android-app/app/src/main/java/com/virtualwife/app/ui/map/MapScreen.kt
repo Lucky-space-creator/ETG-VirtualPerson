@@ -63,6 +63,8 @@ fun MapScreen(
             // 高德SDK隐私合规
             AMapLocationClient.updatePrivacyShow(context, true)
             AMapLocationClient.updatePrivacyAgree(context, true)
+            com.amap.api.maps.MapsInitializer.updatePrivacyShow(context, true)
+            com.amap.api.maps.MapsInitializer.updatePrivacyAgree(context, true)
             val client = AMapLocationClient(context)
             val option = AMapLocationClientOption().apply {
                 locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
