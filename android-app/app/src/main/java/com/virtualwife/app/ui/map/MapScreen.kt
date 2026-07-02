@@ -60,6 +60,9 @@ fun MapScreen(
     LaunchedEffect(Unit) {
         try {
             Log.d("MapScreen", "Initializing AMap location client...")
+            // 高德SDK隐私合规
+            AMapLocationClient.updatePrivacyShow(context, true)
+            AMapLocationClient.updatePrivacyAgree(context, true)
             val client = AMapLocationClient(context)
             val option = AMapLocationClientOption().apply {
                 locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
