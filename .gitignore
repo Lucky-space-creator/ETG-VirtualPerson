@@ -44,32 +44,18 @@ dist/
 .output/
 *.local
 
-# ==================== Android (远程仓库) ====================
-# local.properties
-# *.apk
-# *.aab
-
 # ==================== 项目特定 ====================
-# Python虚拟环境
 virtual/
-# 上传文件
 server/springboot-admin/uploads/
 rag/uploads/
-# 向量数据库数据
 rag/data/
-# 下载文件
 downloads/
-# 知识库原始文件（太大不上传）
 knowledge_base/
-# 示例文件
 example/
-# 阶段追踪（本地文档）
 阶段追踪/
-# 打包文件
 server.zip
-# Docker卷数据
-*.log
 docker-data/
+*.log
 
 # ==================== 密钥与配置 ====================
 .env
@@ -78,3 +64,7 @@ application-local.yml
 application-prod.yml
 *.pem
 *.key
+
+# ==================== Agda ====================
+*.agdai
+**/MAlonzo/**
