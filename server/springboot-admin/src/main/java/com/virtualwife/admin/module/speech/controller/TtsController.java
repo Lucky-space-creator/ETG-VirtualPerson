@@ -111,8 +111,8 @@ public class TtsController {
      */
     private String generateWithEdgeTts(String text, String voiceId) {
         try {
-            // 检查edge-tts是否可用
-            ProcessBuilder checkPb = new ProcessBuilder("edge-tts", "--version");
+            // 使用python -m edge_tts调用（避免PATH问题）
+            ProcessBuilder checkPb = new ProcessBuilder("python", "-m", "edge_tts", "--version");
             checkPb.redirectErrorStream(true);
             Process checkProcess = checkPb.start();
             int checkExit = checkProcess.waitFor();
@@ -130,7 +130,7 @@ public class TtsController {
 
             // 调用edge-tts
             ProcessBuilder pb = new ProcessBuilder(
-                    "edge-tts",
+                    "python", "-m", "edge_tts",
                     "--voice", voiceId,
                     "--text", text,
                     "--write-media", outputFile.getAbsolutePath()
