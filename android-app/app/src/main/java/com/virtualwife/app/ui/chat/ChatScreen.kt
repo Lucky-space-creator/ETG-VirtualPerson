@@ -323,7 +323,7 @@ private fun TourProgressOverlay(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(Icons.Filled.Close, "取消游览",
-                        tint = Color(0xFFE91E63), modifier = Modifier.size(20.dp))
+                        tint = Color(0xFF1C1B1F), modifier = Modifier.size(20.dp))
                 }
             }
 
@@ -426,7 +426,7 @@ private fun RouteReadyCard(
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(Icons.Filled.Close, "取消",
-                        tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        tint = Color(0xFF1C1B1F), modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
