@@ -1,7 +1,11 @@
 package com.virtualwife.app.ui.map
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.util.Log
 import android.view.ViewGroup
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -55,9 +59,41 @@ fun MapScreen(
     val spots = uiState.tourSpots
     val visitedSpots = uiState.visitedSpots
     val currentIndex = uiState.currentSpotIndex
+    var locationPermissionGranted by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
-    // 定位监听
+    // 权限请求
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        locationPermissionGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        if (locationPermissionGranted) {
+            Log.d("MapScreen", "Location permission granted")
+        } else {
+            Log.w("MapScreen", "Location permission denied")
+        }
+    }
+
+    // 请求定位权限
     LaunchedEffect(Unit) {
+        if (!locationPermissionGranted) {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    // 定位监听（权限授予后启动）
+    LaunchedEffect(locationPermissionGranted) {
+        if (!locationPermissionGranted) return@LaunchedEffect
         try {
             Log.d("MapScreen", "Initializing AMap location client...")
             // 高德SDK隐私合规
