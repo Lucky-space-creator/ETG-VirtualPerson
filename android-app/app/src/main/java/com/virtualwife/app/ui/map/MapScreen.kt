@@ -1,6 +1,7 @@
 package com.virtualwife.app.ui.map
 
 import android.graphics.Color
+import android.util.Log
 import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,12 +24,8 @@ import com.amap.api.maps.AMap
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.MapView
 import com.amap.api.maps.model.*
-import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
-import com.amap.api.location.AMapLocationListener
-import com.virtualwife.app.data.repository.LocationRepository
-import com.virtualwife.app.location.GeoFenceManager
 import com.virtualwife.app.viewmodel.ChatViewModel
 
 /**
@@ -62,6 +59,7 @@ fun MapScreen(
     // 定位监听
     LaunchedEffect(Unit) {
         try {
+            Log.d("MapScreen", "Initializing AMap location client...")
             val client = AMapLocationClient(context)
             val option = AMapLocationClientOption().apply {
                 locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
@@ -73,14 +71,17 @@ fun MapScreen(
                 if (location != null && location.errorCode == 0) {
                     userLat = location.latitude
                     userLng = location.longitude
-                    // 通知ChatViewModel更新围栏
+                    Log.d("MapScreen", "Location: $userLat, $userLng")
                     chatViewModel.onLocationUpdate(userLat, userLng)
+                } else {
+                    Log.e("MapScreen", "Location error: ${location?.errorCode}, ${location?.errorInfo}")
                 }
             }
             client.startLocation()
             locationClient = client
+            Log.d("MapScreen", "Location client started")
         } catch (e: Exception) {
-            android.util.Log.e("MapScreen", "Location init failed: ${e.message}")
+            Log.e("MapScreen", "Location init failed: ${e.message}", e)
         }
     }
 
@@ -92,23 +93,33 @@ fun MapScreen(
         }
     }
 
+    var mapError by remember { mutableStateOf<String?>(null) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // 地图
         AndroidView(
             factory = { ctx ->
-                MapView(ctx).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    onCreate(null)
-                    val map = map
-                    aMapRef = map
+                try {
+                    Log.d("MapScreen", "Creating MapView...")
+                    MapView(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        onCreate(null)
+                        val map = map
+                        aMapRef = map
 
-                    // 地图配置
-                    map.uiSettings.isZoomControlsEnabled = false
-                    map.uiSettings.isMyLocationButtonEnabled = false
-                    map.moveCamera(CameraUpdateFactory.zoomTo(15f))
+                        map.uiSettings.isZoomControlsEnabled = false
+                        map.uiSettings.isMyLocationButtonEnabled = false
+                        map.moveCamera(CameraUpdateFactory.zoomTo(15f))
+                        Log.d("MapScreen", "MapView created successfully")
+                    }
+                } catch (e: Exception) {
+                    Log.e("MapScreen", "MapView creation failed: ${e.message}", e)
+                    mapError = e.message
+                    // 返回空FrameLayout作为占位
+                    android.widget.FrameLayout(ctx)
                 }
             },
             update = { mapView ->
@@ -183,6 +194,45 @@ fun MapScreen(
             },
             modifier = Modifier.fillMaxSize()
         )
+
+        // 地图加载失败时显示景点列表
+        if (mapError != null) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Filled.Map, null,
+                        modifier = Modifier.size(64.dp),
+                        tint = Color.LightGray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("地图加载失败",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.Gray)
+                    Text(mapError ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.LightGray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    // 显示景点列表作为降级
+                    spots.forEach { spot ->
+                        val isVisited = visitedSpots.contains(spot.spotOrder - 1)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (isVisited) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                                null,
+                                tint = if (isVisited) Color(0xFF4CAF50) else Color.LightGray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("${spot.spotOrder}. ${spot.name}")
+                        }
+                    }
+                }
+            }
+        }
 
         // 顶部返回栏
         Row(
