@@ -293,7 +293,7 @@ private fun TourProgressCard(
 
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { visitedSpots.size.toFloat() / spots.size.coerceAtLeast(1).toFloat() },
+                progress = visitedSpots.size.toFloat() / spots.size.coerceAtLeast(1).toFloat(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
