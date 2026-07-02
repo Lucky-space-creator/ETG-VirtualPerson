@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import com.virtualwife.app.ui.auth.LoginScreen
 import com.virtualwife.app.ui.chat.ChatScreen
 import com.virtualwife.app.ui.image.ImageCaptureScreen
+import com.virtualwife.app.ui.map.MapScreen
 import com.virtualwife.app.ui.route.RouteScreen
 import com.virtualwife.app.ui.settings.CharacterScreen
 import com.virtualwife.app.ui.settings.SettingsScreen
@@ -22,6 +23,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val CHARACTER = "character"
     const val ROUTE = "route"
+    const val MAP = "map"
     const val IMAGE_CAPTURE = "image_capture"
 }
 
@@ -60,7 +62,8 @@ fun NavGraph(
                 chatViewModel = chatViewModel,
                 onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
                 onNavigateToRoute = { navController.navigate(Routes.ROUTE) },
-                onNavigateToImageCapture = { navController.navigate(Routes.IMAGE_CAPTURE) }
+                onNavigateToImageCapture = { navController.navigate(Routes.IMAGE_CAPTURE) },
+                onNavigateToMap = { navController.navigate(Routes.MAP) }
             )
         }
 
@@ -92,6 +95,13 @@ fun NavGraph(
                     chatViewModel.selectRoute(route.id, route.routeName)
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(Routes.MAP) {
+            MapScreen(
+                chatViewModel = chatViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

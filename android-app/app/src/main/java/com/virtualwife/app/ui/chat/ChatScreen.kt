@@ -59,7 +59,8 @@ fun ChatScreen(
     vrmViewModel: VrmViewModel = viewModel(),
     onNavigateToSettings: () -> Unit,
     onNavigateToRoute: () -> Unit,
-    onNavigateToImageCapture: () -> Unit
+    onNavigateToImageCapture: () -> Unit,
+    onNavigateToMap: () -> Unit = {}
 ) {
     val uiState by chatViewModel.uiState.collectAsStateWithLifecycle()
     val vrmState by vrmViewModel.uiState.collectAsState()
@@ -194,6 +195,7 @@ fun ChatScreen(
                 chatViewModel = chatViewModel,
                 interestTags = interestTags,
                 isRecording = isRecording,
+                onNavigateToMap = onNavigateToMap,
                 onVoiceStart = {
                     if (ContextCompat.checkSelfPermission(
                             context, Manifest.permission.RECORD_AUDIO
@@ -261,6 +263,7 @@ private fun ChatSection(
     chatViewModel: ChatViewModel,
     interestTags: Set<String>,
     isRecording: Boolean,
+    onNavigateToMap: () -> Unit = {},
     onVoiceStart: () -> Unit,
     onVoiceEnd: () -> Unit,
     onCameraClick: () -> Unit,
@@ -285,7 +288,7 @@ private fun ChatSection(
             .fillMaxWidth()
             .navigationBarsPadding()
     ) {
-        RoutePromptCard(uiState, chatViewModel)
+        RoutePromptCard(uiState, chatViewModel, onNavigateToMap)
 
         LazyColumn(
             state = listState,
@@ -329,7 +332,8 @@ private fun ChatSection(
 @Composable
 private fun RoutePromptCard(
     uiState: com.virtualwife.app.viewmodel.ChatUiState,
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    onNavigateToMap: () -> Unit = {}
 ) {
     if (uiState.selectedRouteId != null && !uiState.isTourActive) {
         Card(
@@ -354,7 +358,10 @@ private fun RoutePromptCard(
                     modifier = Modifier.weight(1f)
                 )
                 Button(
-                    onClick = { chatViewModel.startTour() },
+                    onClick = {
+                        chatViewModel.startTour()
+                        onNavigateToMap()
+                    },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63)),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)

@@ -101,6 +101,10 @@ dependencies {
     // WebView
     implementation("androidx.webkit:webkit:1.8.0")
 
+    // 高德地图SDK
+    implementation("com.amap.api:3dmap:latest.integration")
+    implementation("com.amap.api:location:latest.integration")
+
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 

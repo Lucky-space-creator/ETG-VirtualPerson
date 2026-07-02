@@ -31,6 +31,11 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="34">
 
+        <!-- 高德地图API Key（替换为你的Key） -->
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="YOUR_AMAP_API_KEY_HERE" />
+
         <activity
             android:name=".SplashActivity"
             android:exported="true"
