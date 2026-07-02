@@ -68,7 +68,7 @@ public class AvatarClothesService extends ServiceImpl<AvatarClothesMapper, Avata
         if (clothes == null) return;
 
         // 取消同数字人下的其他默认衣服
-        update(null, new LambdaQueryWrapper<AvatarClothes>()
+        update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<AvatarClothes>()
                 .eq(AvatarClothes::getAvatarId, clothes.getAvatarId())
                 .eq(AvatarClothes::getIsDefault, 1)
                 .set(AvatarClothes::getIsDefault, 0)

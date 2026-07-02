@@ -61,7 +61,7 @@ public class StatisticsService extends com.baomidou.mybatisplus.extension.servic
 
         // 批量查询已缓存的日报数据
         LocalDate startDate = today.minusDays(days - 1);
-        List<StatisticsDaily> cachedList = statisticsDailyMapper.selectList(
+        List<StatisticsDaily> cachedList = baseMapper.selectList(
                 new LambdaQueryWrapper<StatisticsDaily>()
                         .ge(StatisticsDaily::getStatDate, startDate)
                         .le(StatisticsDaily::getStatDate, today)
