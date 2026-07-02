@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI数字人</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { overflow: hidden; background: transparent; font-family: sans-serif; width: 100%; height: 100%; }
+        #vrm-canvas { position: absolute; top: 0; left: 0; display: block; width: 100%; height: 100%; }
+        #loading {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #999; font-size: 14px; text-align: center;
+        }
+        #loading .spinner {
+            width: 32px; height: 32px; margin: 0 auto 12px;
+            border: 3px solid #e0e0e0; border-top-color: #667eea;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #avatar-2d {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 200px; height: 280px; display: none;
+        }
+        #avatar-2d .head {
+            width: 80px; height: 80px; margin: 0 auto 16px;
+            border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; color: white;
+        }
+        #avatar-2d .body {
+            width: 120px; height: 160px; margin: 0 auto;
+            border-radius: 60px 60px 30px 30px;
+            background: linear-gradient(180deg, rgba(102,126,234,0.2), rgba(118,75,162,0.1));
+            border: 2px solid rgba(102,126,234,0.3);
+        }
+        #avatar-2d .name {
+            text-align: center; margin-top: 12px;
+            font-size: 16px; color: #667eea; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <span>加载数字人...</span>
+    </div>
+    <div id="avatar-2d">
+        <div class="head">🧑‍🏫</div>
+        <div class="body"></div>
+        <div class="name" id="avatar-name">AI导游</div>
+    </div>
+    <canvas id="vrm-canvas"></canvas>
+
+    <script src="lib/three.min.js"></script>
+    <script src="vrm-animation.js"></script>
+    <script>
+        console.log('[VRM] Three.js loaded:', typeof THREE !== 'undefined');
+
+        function loadScript(src, cdnSrc) {
+            return new Promise(function(resolve, reject) {
+                console.log('[VRM] Loading:', src);
+                var script = document.createElement('script');
+                script.onload = function() {
+                    console.log('[VRM] OK:', src);
+                    resolve();
+                };
+                script.onerror = function() {
+                    console.warn('[VRM] Local failed:', src);
+                    if (cdnSrc) {
+                        console.log('[VRM] Trying CDN:', cdnSrc);
+                        var s2 = document.createElement('script');
+                        s2.onload = function() {
+                            console.log('[VRM] CDN OK');
+                            resolve();
+                        };
+                        s2.onerror = function() {
+                            console.error('[VRM] CDN failed:', cdnSrc);
+                            reject(new Error('Failed to load: ' + src));
+                        };
+                        s2.src = cdnSrc;
+                        document.head.appendChild(s2);
+                    } else {
+                        reject(new Error('Failed to load: ' + src));
+                    }
+                };
+                script.src = src;
+                document.head.appendChild(script);
+            });
+        }
+
+        async function init() {
+            try {
+                if (typeof THREE === 'undefined') {
+                    throw new Error('Three.js not loaded');
+                }
+
+                // 加载GLTFLoader
+                await loadScript(
+                    'lib/GLTFLoader.js',
+                    'https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js'
+                );
+                console.log('[VRM] GLTFLoader:', typeof THREE.GLTFLoader !== 'undefined');
+
+                // 加载three-vrm
+                await loadScript(
+                    'lib/three-vrm.min.js',
+                    'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.0.6/lib/three-vrm.min.js'
+                );
+                console.log('[VRM] VRMLoaderPlugin:', typeof THREE.VRMLoaderPlugin !== 'undefined');
+
+                // 加载bridge
+                await loadScript('vrm-bridge.js', null);
+                console.log('[VRM] VRMBridge:', typeof VRMBridge !== 'undefined');
+
+                // 初始化
+                if (typeof VRMBridge !== 'undefined') {
+                    VRMBridge.init();
+                    console.log('[VRM] Init complete');
+                }
+
+                if (window.AndroidBridge && window.AndroidBridge.onLibsReady) {
+                    window.AndroidBridge.onLibsReady();
+                }
+            } catch (e) {
+                console.error('[VRM] Init error:', e.message);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('vrm-canvas').style.display = 'none';
+                document.getElementById('avatar-2d').style.display = 'block';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
