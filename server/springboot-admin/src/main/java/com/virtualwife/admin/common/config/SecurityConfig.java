@@ -50,33 +50,27 @@ public class SecurityConfig {
                                 "/swagger-resources/**", "/swagger-ui/**", "/favicon.ico").permitAll()
 
                         // ==================== GET读操作公开（Android游客端）====================
-                        // 数字人形象 - 读写（含默认形象）
+                        // 数字人形象 - 只读
                         .requestMatchers(HttpMethod.GET, "/avatar/**").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/avatar/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/avatar/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/avatar/**").permitAll()
-                        // 数字人衣服
-                        .requestMatchers("/avatar/clothes/**").permitAll()
-                        // 路线推荐 - 读
+                        // 路线推荐 - 只读
                         .requestMatchers(HttpMethod.GET, "/route/**").permitAll()
-                        // 知识库 - 读
+                        // 知识库 - 只读
                         .requestMatchers(HttpMethod.GET, "/kb/**").permitAll()
-                        // RAG文档 - 读
+                        // RAG文档 - 只读
                         .requestMatchers(HttpMethod.GET, "/rag/**").permitAll()
-                        // LLM配置 - 读
+                        // LLM配置 - 只读
                         .requestMatchers(HttpMethod.GET, "/llm/**").permitAll()
-                        // 统计数据 - 读
+                        // 统计数据 - 只读
                         .requestMatchers(HttpMethod.GET, "/statistics/**").permitAll()
-                        // 用户分析报告 - 读 + 生成
+                        // 用户分析报告 - 只读
                         .requestMatchers(HttpMethod.GET, "/report/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/report/generate").permitAll()
-                        // 聊天记录 - 读
+                        // 聊天记录 - 只读
                         .requestMatchers(HttpMethod.GET, "/chat/**").permitAll()
-                        // 用户管理 - 读
+                        // 用户管理 - 只读
                         .requestMatchers(HttpMethod.GET, "/user/**").permitAll()
-                        // RBAC权限管理 - 读
+                        // RBAC权限管理 - 只读
                         .requestMatchers(HttpMethod.GET, "/rbac/**").permitAll()
-                        // 游客消费 - 读
+                        // 游客消费 - 只读
                         .requestMatchers(HttpMethod.GET, "/tourist/**").permitAll()
 
                         // ==================== OPTIONS预检 ====================

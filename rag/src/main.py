@@ -1,12 +1,18 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pathlib import Path
 import uvicorn
 
-from src.config import SERVER_PORT
+from src.config import SERVER_PORT, RAG_API_KEY
 from src.api import health, document, search, tourist_analysis
+
+
+async def verify_api_key(x_api_key: str = Header(default="")):
+    """验证RAG API Key（RAG_API_KEY为空时跳过验证）"""
+    if RAG_API_KEY and x_api_key != RAG_API_KEY:
+        raise HTTPException(status_code=401, detail="无效的API Key")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,11 +39,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 注册路由
+# 注册路由 (health不需要认证，其他需要)
 app.include_router(health.router, prefix="/api/rag", tags=["health"])
-app.include_router(document.router, prefix="/api/rag", tags=["document"])
-app.include_router(search.router, prefix="/api/rag", tags=["search"])
-app.include_router(tourist_analysis.router, prefix="/api/rag/tourist", tags=["tourist-analysis"])
+app.include_router(document.router, prefix="/api/rag", tags=["document"], dependencies=[Depends(verify_api_key)])
+app.include_router(search.router, prefix="/api/rag", tags=["search"], dependencies=[Depends(verify_api_key)])
+app.include_router(tourist_analysis.router, prefix="/api/rag/tourist", tags=["tourist-analysis"], dependencies=[Depends(verify_api_key)])
 
 # 挂载静态文件（独立前端UI）
 static_dir = Path(__file__).parent.parent / "static"

@@ -37,6 +37,16 @@ target/
 .gradle/
 gradle/
 
+# ==================== Android ====================
+android-app/app/build/
+android-app/build/
+android-app/local.properties
+android-app/app/local.properties
+android-app/.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+
 # ==================== Node / Vue ====================
 node_modules/
 dist/
@@ -60,6 +70,7 @@ docker-data/
 # ==================== 密钥与配置 ====================
 .env
 .env.*
+!.env.example
 application-local.yml
 application-prod.yml
 *.pem

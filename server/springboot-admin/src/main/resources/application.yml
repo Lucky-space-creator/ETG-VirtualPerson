@@ -14,9 +14,9 @@ spring:
     active: dev
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/virtualwife_admin?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: root
+    url: ${DB_URL:jdbc:mysql://localhost:3306/virtualwife_admin?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -24,10 +24,10 @@ spring:
       connection-timeout: 20000
   data:
     redis:
-      host: localhost
-      port: 6379
-      database: 3
-      password:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DB:3}
+      password: ${REDIS_PASSWORD:}
       timeout: 5000ms
   cache:
     type: simple
@@ -39,7 +39,6 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
@@ -48,10 +47,10 @@ mybatis-plus:
       logic-not-delete-value: 0
   mapper-locations: classpath*:/mapper/**/*.xml
 
-# JWT
+# JWT (生产环境必须通过环境变量设置随机密钥)
 jwt:
-  secret: VirtualWifeAdmin2024SecretKeyForJWTTokenGenerationAndValidation
-  expiration: 86400000
+  secret: ${JWT_SECRET:please-change-this-to-a-random-secret-key-at-least-32-chars}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 # 虚拟数字人系统配置
 virtualwife:
@@ -60,11 +59,11 @@ virtualwife:
   rag:
     api-url: http://localhost:5001
   minio:
-    endpoint: http://localhost:9000
-    external-endpoint: http://10.0.2.2:9000
-    access-key: minioadmin
-    secret-key: minioadmin
-    bucket: virtual-knowledge
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    external-endpoint: ${MINIO_EXTERNAL_ENDPOINT:http://10.0.2.2:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:virtual-knowledge}
 
 # Knife4j
 knife4j:

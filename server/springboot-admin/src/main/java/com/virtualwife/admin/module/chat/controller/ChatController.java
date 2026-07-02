@@ -1,10 +1,11 @@
 package com.virtualwife.admin.module.chat.controller;
 
 import com.virtualwife.admin.common.result.Result;
+import com.virtualwife.admin.module.chat.dto.ChatRequest;
 import com.virtualwife.admin.module.chat.service.ChatService;
 import com.virtualwife.admin.module.avatar.entity.AvatarConfig;
 import com.virtualwife.admin.module.avatar.service.AvatarConfigService;
-import lombok.Data;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +33,7 @@ public class ChatController {
      * POST /api/admin/chat/send
      */
     @PostMapping("/send")
-    public Result<Map<String, Object>> sendMessage(@RequestBody ChatRequest request) {
+    public Result<Map<String, Object>> sendMessage(@Valid @RequestBody ChatRequest request) {
         try {
             // 生成会话ID（如果未提供）
             String sessionId = request.getSessionId();
@@ -81,13 +82,4 @@ public class ChatController {
         return Result.success(status);
     }
 
-    @Data
-    public static class ChatRequest {
-        private Long userId;
-        private String sessionId;
-        private Long avatarId;
-        private String message;
-        private String scenicSpot;
-        private String userInterest;
-    }
 }

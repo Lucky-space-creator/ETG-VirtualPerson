@@ -2,6 +2,7 @@ package com.virtualwife.admin.common.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -16,11 +17,22 @@ import java.util.Map;
 @Component
 public class JwtUtil {
 
+    private static final String DEFAULT_SECRET = "please-change-this-to-a-random-secret-key-at-least-32-chars";
+
     @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expiration}")
     private long expiration;
+
+    @PostConstruct
+    public void checkSecret() {
+        if (DEFAULT_SECRET.equals(secret)) {
+            log.warn("========================================");
+            log.warn("WARNING: JWT密钥使用默认值，请通过环境变量JWT_SECRET设置随机密钥！");
+            log.warn("========================================");
+        }
+    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
