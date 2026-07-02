@@ -190,29 +190,28 @@ fun ChatScreen(
 
             // 中间区域：路线状态卡片 + 地图按钮
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                when {
-                    // 游览中：显示进度
-                    isTourActive -> {
-                        TourProgressOverlay(
-                            uiState = uiState,
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                    // 已选路线未开始：显示开始按钮
-                    uiState.selectedRouteId != null -> {
-                        RouteReadyCard(
-                            routeName = uiState.selectedRouteName ?: "",
-                            onStartTour = {
-                                chatViewModel.startTour()
-                                onNavigateToMap()
-                            },
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
+                // 游览中：显示进度
+                if (isTourActive) {
+                    TourProgressOverlay(
+                        uiState = uiState,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+
+                // 已选路线未开始：显示开始按钮
+                if (uiState.selectedRouteId != null && !isTourActive) {
+                    RouteReadyCard(
+                        routeName = uiState.selectedRouteName ?: "未知路线",
+                        onStartTour = {
+                            chatViewModel.startTour()
+                            onNavigateToMap()
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
 
                 // 地图按钮（有路线时显示）
@@ -281,8 +280,8 @@ private fun TopBar(
             // 已选路线时显示路线名，否则显示默认文字
             if (routeName != null) {
                 Text("🗺️ $routeName",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFFFD700))
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color(0xFF1C1B1F))
             } else {
                 Text("在线陪你逛",
                     style = MaterialTheme.typography.bodySmall,
