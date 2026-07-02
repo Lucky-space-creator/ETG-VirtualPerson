@@ -212,6 +212,7 @@ fun ChatScreen(
                 TourProgressOverlay(
                     uiState = uiState,
                     onCancelTour = { chatViewModel.stopTour() },
+                    onViewMap = onNavigateToMap,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
@@ -290,6 +291,7 @@ private fun TopBar(
 private fun TourProgressOverlay(
     uiState: com.virtualwife.app.viewmodel.ChatUiState,
     onCancelTour: () -> Unit = {},
+    onViewMap: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val spots = uiState.tourSpots
@@ -318,6 +320,13 @@ private fun TourProgressOverlay(
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold, color = Color(0xFFE91E63)))
                 Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = onViewMap,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Filled.Map, "查看地图",
+                        tint = Color(0xFF1C1B1F), modifier = Modifier.size(20.dp))
+                }
                 IconButton(
                     onClick = onCancelTour,
                     modifier = Modifier.size(32.dp)
