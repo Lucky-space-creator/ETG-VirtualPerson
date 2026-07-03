@@ -128,13 +128,18 @@ public class TtsController {
             String fileName = "tts_" + System.currentTimeMillis() + ".mp3";
             File outputFile = new File(outDir, fileName);
 
-            // 调用edge-tts
-            ProcessBuilder pb = new ProcessBuilder(
-                    "python", "-m", "edge_tts",
-                    "--voice", voiceId,
-                    "--text", text,
-                    "--write-media", outputFile.getAbsolutePath()
+            // 写入临时文本文件（避免命令行编码问题）
+            File textFile = new File(outDir, "tts_text_" + System.currentTimeMillis() + ".txt");
+            java.nio.file.Files.write(textFile.toPath(), text.getBytes(StandardCharsets.UTF_8));
+
+            // 调用edge-tts（通过Python脚本读取文件）
+            String script = String.format(
+                    "import edge_tts, asyncio; asyncio.run(edge_tts.Communicate(open('%s','r',encoding='utf-8').read(), '%s').save('%s'))",
+                    textFile.getAbsolutePath().replace("\\", "\\\\"),
+                    voiceId,
+                    outputFile.getAbsolutePath().replace("\\", "\\\\")
             );
+            ProcessBuilder pb = new ProcessBuilder("python", "-c", script);
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
@@ -149,6 +154,9 @@ public class TtsController {
 
             int exitCode = process.waitFor();
             log.info("edge-tts退出码: {}, 输出: {}", exitCode, output.toString().trim());
+
+            // 清理临时文本文件
+            textFile.delete();
 
             if (exitCode == 0 && outputFile.exists() && outputFile.length() > 0) {
                 // 读取为Base64
