@@ -106,8 +106,8 @@
           <el-button size="small" text @click="showAllSpotsDialog = true">查看全部</el-button>
         </div>
         <el-table :data="spotRanking" style="width:100%" :header-cell-style="headerStyle" :row-style="rowStyle">
-          <el-table-column type="index" label="#" width="50" />
-          <el-table-column prop="name" label="景点名称" width="150">
+          <el-table-column type="index" label="#" width="50" fixed />
+          <el-table-column prop="name" label="景点名称" min-width="120">
             <template #default="{ row }">
               <div class="spot-name">
                 <div class="spot-dot" :style="{ background: getSpotColor(row.name) }"></div>
@@ -115,22 +115,22 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="visitorCount" label="游客数" width="100">
+          <el-table-column prop="visitorCount" label="游客数" min-width="80">
             <template #default="{ row }">
               <span class="highlight-value">{{ formatNumber(row.visitorCount) }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="avgConsumption" label="人均消费" width="120">
+          <el-table-column prop="avgConsumption" label="人均消费" min-width="100">
             <template #default="{ row }">
               <span class="money-value">¥{{ row.avgConsumption }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="totalConsumption" label="总消费额" width="120">
+          <el-table-column prop="totalConsumption" label="总消费额" min-width="100">
             <template #default="{ row }">
               <span class="money-value">¥{{ formatMoney(row.totalConsumption) }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="avgSatisfaction" label="满意度" width="150">
+          <el-table-column prop="avgSatisfaction" label="满意度" min-width="120">
             <template #default="{ row }">
               <div class="satisfaction-bar">
                 <div class="satisfaction-fill" :style="{ width: (row.avgSatisfaction / 5 * 100) + '%' }"></div>
@@ -138,7 +138,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="avgStayDuration" label="停留时长" width="100">
+          <el-table-column prop="avgStayDuration" label="停留时长" min-width="80">
             <template #default="{ row }">
               {{ row.avgStayDuration }}h
             </template>
@@ -148,10 +148,10 @@
     </div>
 
     <!-- 全部景点消费数据弹窗 -->
-    <el-dialog v-model="showAllSpotsDialog" title="景点消费数据" width="900px">
+    <el-dialog v-model="showAllSpotsDialog" title="景点消费数据" width="85%" style="max-width:900px">
       <el-table :data="allSpotRanking" style="width:100%" stripe :header-cell-style="headerStyle" :row-style="rowStyle">
-        <el-table-column type="index" label="#" width="50" />
-        <el-table-column prop="name" label="景点名称" width="150">
+        <el-table-column type="index" label="#" width="50" fixed />
+        <el-table-column prop="name" label="景点名称" min-width="120">
           <template #default="{ row }">
             <div class="spot-name">
               <div class="spot-dot" :style="{ background: getSpotColor(row.name) }"></div>
@@ -670,6 +670,7 @@ onBeforeUnmount(() => {
   border-radius: 16px;
   padding: 20px;
   transition: background 0.3s ease;
+  overflow-x: auto;
 }
 
 .table-header {
