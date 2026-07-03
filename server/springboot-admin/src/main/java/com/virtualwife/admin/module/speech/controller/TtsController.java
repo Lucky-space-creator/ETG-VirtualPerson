@@ -54,6 +54,19 @@ public class TtsController {
 
             String text = json.getStr("text");
             String voiceId = json.getStr("voiceId", "zh-CN-XiaoyiNeural");
+
+            // 校验语音ID，无效则回退到默认
+            Set<String> validVoices = Set.of(
+                    "zh-CN-XiaoxiaoNeural", "zh-CN-XiaoyiNeural",
+                    "zh-CN-YunjianNeural", "zh-CN-YunxiNeural",
+                    "zh-CN-YunxiaNeural", "zh-CN-YunyangNeural",
+                    "zh-CN-liaoning-XiaobeiNeural", "zh-CN-shaanxi-XiaoniNeural"
+            );
+            if (!validVoices.contains(voiceId)) {
+                log.warn("无效语音ID: {}，回退到默认", voiceId);
+                voiceId = "zh-CN-XiaoyiNeural";
+            }
+
             log.info("TTS request: voiceId={}, text={}", voiceId, text != null ? text.substring(0, Math.min(30, text.length())) : "null");
 
             if (text == null || text.isBlank()) {
@@ -128,20 +141,31 @@ public class TtsController {
             String fileName = "tts_" + System.currentTimeMillis() + ".mp3";
             File outputFile = new File(outDir, fileName);
 
-            // 写入临时文本文件（避免命令行编码问题）
-            File textFile = new File(outDir, "tts_text_" + System.currentTimeMillis() + ".txt");
-            java.nio.file.Files.write(textFile.toPath(), text.getBytes(StandardCharsets.UTF_8));
-
-            // 调用edge-tts（通过Python脚本读取文件）
-            String script = String.format(
-                    "import edge_tts, asyncio; asyncio.run(edge_tts.Communicate(open('%s','r',encoding='utf-8').read(), '%s').save('%s'))",
-                    textFile.getAbsolutePath().replace("\\", "\\\\"),
+            // 写入临时Python脚本（避免所有编码问题）
+            File scriptFile = new File(outDir, "tts_script_" + System.currentTimeMillis() + ".py");
+            String scriptContent = String.format(
+                    "import edge_tts, asyncio, sys\n" +
+                    "async def main():\n" +
+                    "    text = sys.stdin.read()\n" +
+                    "    c = edge_tts.Communicate(text, '%s')\n" +
+                    "    await c.save('%s')\n" +
+                    "asyncio.run(main())\n",
                     voiceId,
-                    outputFile.getAbsolutePath().replace("\\", "\\\\")
+                    outputFile.getAbsolutePath().replace("\\", "/")
             );
-            ProcessBuilder pb = new ProcessBuilder("python", "-c", script);
+            java.nio.file.Files.write(scriptFile.toPath(), scriptContent.getBytes(StandardCharsets.UTF_8));
+
+            // 通过stdin传递文本，避免编码问题
+            ProcessBuilder pb = new ProcessBuilder("python", scriptFile.getAbsolutePath());
             pb.redirectErrorStream(true);
+            pb.environment().put("PYTHONIOENCODING", "utf-8");
             Process process = pb.start();
+
+            // 写入文本到stdin
+            try (java.io.OutputStream os = process.getOutputStream()) {
+                os.write(text.getBytes(StandardCharsets.UTF_8));
+                os.flush();
+            }
 
             // 读取输出
             StringBuilder output = new StringBuilder();
@@ -155,8 +179,8 @@ public class TtsController {
             int exitCode = process.waitFor();
             log.info("edge-tts退出码: {}, 输出: {}", exitCode, output.toString().trim());
 
-            // 清理临时文本文件
-            textFile.delete();
+            // 清理临时脚本文件
+            scriptFile.delete();
 
             if (exitCode == 0 && outputFile.exists() && outputFile.length() > 0) {
                 // 读取为Base64
