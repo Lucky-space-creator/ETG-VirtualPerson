@@ -477,8 +477,12 @@ const VRMBridge = {
         const animName = actionMap[action] || action;
 
         if (window.VRMAnimation && VRMAnimation.animations[animName]) {
-            // 使用动作队列，避免动作互相覆盖
-            VRMAnimation.queueAction(animName);
+            // 说话时直接播放（口型优先），非说话时用队列
+            if (this._talkingTimer) {
+                VRMAnimation.play(animName, this.vrmModel);
+            } else {
+                VRMAnimation.queueAction(animName);
+            }
         } else {
             console.warn('[VRM] Animation not found:', animName);
         }
@@ -488,7 +492,7 @@ const VRMBridge = {
      * 随机播放一个动作
      */
     playRandomAction() {
-        if (this._isPlayingAction) return;
+        if (this._isPlayingAction || this._talkingTimer) return;
         const actions = this._availableActions;
         const randomIndex = Math.floor(Math.random() * actions.length);
         const action = actions[randomIndex];
@@ -628,7 +632,7 @@ const VRMBridge = {
                 this.vrmModel.scene.rotation.y = Math.PI + Math.sin(time * 0.4) * 0.015;
             }
 
-            // 随机待机动作（参考duix startRandomMotion）
+            // 随机待机动作（不在说话或已有动作时触发）
             if (!this._isPlayingAction && !this._talkingTimer) {
                 if (time - this._lastIdleActionTime > this._idleActionInterval / 1000) {
                     this._lastIdleActionTime = time;
