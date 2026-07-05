@@ -21,35 +21,30 @@ public class StatisticsController {
     private final StatisticsScheduledTask statisticsScheduledTask;
 
     @GetMapping("/dashboard")
-    public Result<Map<String, Object>> dashboard() {
-        return Result.success(statisticsService.getDashboard());
+    public Result<Map<String, Object>> dashboard(@RequestParam(required = false) Long scenicSpotId) {
+        return Result.success(statisticsService.getDashboard(scenicSpotId));
     }
 
-    @Cacheable(value = "dashboard", key = "'trend:' + #days")
     @GetMapping("/trend")
-    public Result<List<Map<String, Object>>> trend(@RequestParam(defaultValue = "7") int days) {
-        return Result.success(statisticsService.getTrend(days));
+    public Result<List<Map<String, Object>>> trend(
+            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(required = false) Long scenicSpotId) {
+        return Result.success(statisticsService.getTrend(days, scenicSpotId));
     }
 
     @GetMapping("/user-ranking")
-    public Result<List<Map<String, Object>>> userRanking() {
-        return Result.success(statisticsService.getUserRanking());
+    public Result<List<Map<String, Object>>> userRanking(@RequestParam(required = false) Long scenicSpotId) {
+        return Result.success(statisticsService.getUserRanking(scenicSpotId));
     }
 
-    /**
-     * 游客消费统计
-     */
     @GetMapping("/consumption")
-    public Result<Map<String, Object>> consumption() {
-        return Result.success(statisticsService.getConsumptionStats());
+    public Result<Map<String, Object>> consumption(@RequestParam(required = false) Long scenicSpotId) {
+        return Result.success(statisticsService.getConsumptionStats(scenicSpotId));
     }
 
-    /**
-     * 实时数据
-     */
     @GetMapping("/realtime")
-    public Result<Map<String, Object>> realtime() {
-        return Result.success(statisticsService.getRealtimeStats());
+    public Result<Map<String, Object>> realtime(@RequestParam(required = false) Long scenicSpotId) {
+        return Result.success(statisticsService.getRealtimeStats(scenicSpotId));
     }
 
     /**

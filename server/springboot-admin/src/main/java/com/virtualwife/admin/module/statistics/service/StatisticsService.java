@@ -32,30 +32,27 @@ public class StatisticsService extends com.baomidou.mybatisplus.extension.servic
     private final SpotMapper spotMapper;
     private final TouristConsumptionMapper touristConsumptionMapper;
 
-    @Cacheable(value = "dashboard", key = "'today'")
-    public Map<String, Object> getDashboard() {
+    public Map<String, Object> getDashboard(Long scenicSpotId) {
         Map<String, Object> dashboard = new HashMap<>();
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
-        // 总用户数
         dashboard.put("totalUsers", userMapper.selectCount(null));
-        // 今日活跃用户
         dashboard.put("activeUsers", userMapper.selectCount(
-                new LambdaQueryWrapper<User>()
-                        .ge(User::getLastLoginTime, todayStart)
-        ));
-        // 总消息数
-        dashboard.put("totalMessages", chatRecordMapper.selectCount(null));
-        // 今日消息数
-        dashboard.put("todayMessages", chatRecordMapper.selectCount(
-                new LambdaQueryWrapper<ChatRecord>()
-                        .ge(ChatRecord::getCreateTime, todayStart)
-        ));
+                new LambdaQueryWrapper<User>().ge(User::getLastLoginTime, todayStart)));
+
+        LambdaQueryWrapper<ChatRecord> msgWrapper = new LambdaQueryWrapper<>();
+        if (scenicSpotId != null) msgWrapper.eq(ChatRecord::getScenicSpotId, scenicSpotId);
+        dashboard.put("totalMessages", chatRecordMapper.selectCount(msgWrapper));
+
+        LambdaQueryWrapper<ChatRecord> todayWrapper = new LambdaQueryWrapper<ChatRecord>()
+                .ge(ChatRecord::getCreateTime, todayStart);
+        if (scenicSpotId != null) todayWrapper.eq(ChatRecord::getScenicSpotId, scenicSpotId);
+        dashboard.put("todayMessages", chatRecordMapper.selectCount(todayWrapper));
 
         return dashboard;
     }
 
-    public List<Map<String, Object>> getTrend(int days) {
+    public List<Map<String, Object>> getTrend(int days, Long scenicSpotId) {
         List<Map<String, Object>> trend = new ArrayList<>();
         LocalDate today = LocalDate.now();
 
@@ -100,14 +97,11 @@ public class StatisticsService extends com.baomidou.mybatisplus.extension.servic
         return trend;
     }
 
-    public List<Map<String, Object>> getUserRanking() {
+    public List<Map<String, Object>> getUserRanking(Long scenicSpotId) {
         return Collections.emptyList();
     }
 
-    /**
-     * 获取消费统计数据（使用MyBatis Plus查询）
-     */
-    public Map<String, Object> getConsumptionStats() {
+    public Map<String, Object> getConsumptionStats(Long scenicSpotId) {
         Map<String, Object> data = new HashMap<>();
 
         // 1. 年龄分布（使用采样查询）
@@ -285,7 +279,7 @@ public class StatisticsService extends com.baomidou.mybatisplus.extension.servic
     /**
      * 获取实时数据（使用MyBatis Plus查询）
      */
-    public Map<String, Object> getRealtimeStats() {
+    public Map<String, Object> getRealtimeStats(Long scenicSpotId) {
         Map<String, Object> data = new HashMap<>();
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 

@@ -28,8 +28,9 @@ public class ChatRecordController {
             @RequestParam(required = false) String avatarName,
             @RequestParam(required = false) String messageType,
             @RequestParam(required = false) String emotion,
+            @RequestParam(required = false) Long scenicSpotId,
             @RequestParam(required = false) String keyword) {
-        return Result.success(chatRecordService.pageRecords(pageNum, pageSize, userId, avatarName, messageType, emotion, keyword));
+        return Result.success(chatRecordService.pageRecords(pageNum, pageSize, userId, avatarName, messageType, emotion, keyword, scenicSpotId));
     }
 
     @GetMapping("/{id}")

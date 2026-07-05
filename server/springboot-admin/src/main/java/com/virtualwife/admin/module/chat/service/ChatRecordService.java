@@ -18,9 +18,10 @@ public class ChatRecordService extends ServiceImpl<ChatRecordMapper, ChatRecord>
 
     @Cacheable(value = "chatRecord", key = "'page:' + #pageNum + ':' + #pageSize")
     public Page<ChatRecord> pageRecords(int pageNum, int pageSize, Long userId, String avatarName,
-                                        String messageType, String emotion, String keyword) {
+                                        String messageType, String emotion, String keyword, Long scenicSpotId) {
         LambdaQueryWrapper<ChatRecord> wrapper = new LambdaQueryWrapper<>();
         if (userId != null) wrapper.eq(ChatRecord::getUserId, userId);
+        if (scenicSpotId != null) wrapper.eq(ChatRecord::getScenicSpotId, scenicSpotId);
         if (avatarName != null && !avatarName.isBlank()) wrapper.eq(ChatRecord::getAvatarName, avatarName);
         if (messageType != null && !messageType.isBlank()) wrapper.eq(ChatRecord::getMessageType, messageType);
         if (emotion != null && !emotion.isBlank()) wrapper.eq(ChatRecord::getEmotion, emotion);
