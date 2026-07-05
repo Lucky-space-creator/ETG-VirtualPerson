@@ -27,8 +27,9 @@ public class RouteController {
     public Result<Page<Route>> page(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword) {
-        return Result.success(routeService.pageRoutes(pageNum, pageSize, keyword));
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long scenicSpotId) {
+        return Result.success(routeService.pageRoutes(pageNum, pageSize, keyword, scenicSpotId));
     }
 
     @PostMapping

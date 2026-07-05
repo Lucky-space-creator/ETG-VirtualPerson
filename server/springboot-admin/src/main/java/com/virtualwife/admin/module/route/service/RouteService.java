@@ -19,9 +19,9 @@ public class RouteService extends ServiceImpl<RouteMapper, Route> {
 
     private final SpotMapper spotMapper;
 
-    @Cacheable(value = "route", key = "'page:' + #pageNum + ':' + #pageSize + ':' + #keyword")
-    public Page<Route> pageRoutes(int pageNum, int pageSize, String keyword) {
+    public Page<Route> pageRoutes(int pageNum, int pageSize, String keyword, Long scenicSpotId) {
         LambdaQueryWrapper<Route> wrapper = new LambdaQueryWrapper<>();
+        if (scenicSpotId != null) wrapper.eq(Route::getScenicSpotId, scenicSpotId);
         if (keyword != null && !keyword.isBlank()) wrapper.like(Route::getRouteName, keyword);
         wrapper.orderByAsc(Route::getSortOrder);
         return this.page(new Page<>(pageNum, pageSize), wrapper);

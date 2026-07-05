@@ -33,8 +33,9 @@ public class AvatarConfigController {
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long scenicSpotId,
             @RequestParam(defaultValue = "false") boolean mobile) {
-        Page<AvatarConfig> page = avatarService.pageAvatars(pageNum, pageSize, keyword);
+        Page<AvatarConfig> page = avatarService.pageAvatars(pageNum, pageSize, keyword, scenicSpotId);
         page.getRecords().forEach(a -> fillDisplayUrls(a, mobile));
         return Result.success(page);
     }

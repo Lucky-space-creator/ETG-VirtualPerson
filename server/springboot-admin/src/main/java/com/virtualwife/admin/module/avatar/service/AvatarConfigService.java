@@ -15,8 +15,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AvatarConfigService extends ServiceImpl<AvatarConfigMapper, AvatarConfig> {
 
-    public Page<AvatarConfig> pageAvatars(int pageNum, int pageSize, String keyword) {
+    public Page<AvatarConfig> pageAvatars(int pageNum, int pageSize, String keyword, Long scenicSpotId) {
         LambdaQueryWrapper<AvatarConfig> wrapper = new LambdaQueryWrapper<>();
+        if (scenicSpotId != null) wrapper.eq(AvatarConfig::getScenicSpotId, scenicSpotId);
         if (keyword != null && !keyword.isBlank()) wrapper.like(AvatarConfig::getAvatarName, keyword);
         wrapper.orderByAsc(AvatarConfig::getSortOrder);
         return this.page(new Page<>(pageNum, pageSize), wrapper);

@@ -31,8 +31,9 @@ public class KnowledgeController {
     public Result<Page<KnowledgeBase>> pageKb(
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword) {
-        return Result.success(kbService.pageKb(pageNum, pageSize, keyword));
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long scenicSpotId) {
+        return Result.success(kbService.pageKb(pageNum, pageSize, keyword, scenicSpotId));
     }
 
     @PostMapping

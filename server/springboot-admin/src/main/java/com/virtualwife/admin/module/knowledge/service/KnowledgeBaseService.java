@@ -19,9 +19,9 @@ public class KnowledgeBaseService extends ServiceImpl<KnowledgeBaseMapper, Knowl
 
     private final KnowledgeItemMapper knowledgeItemMapper;
 
-    @Cacheable(value = "knowledge", key = "'page:' + #pageNum + ':' + #pageSize + ':' + #keyword")
-    public Page<KnowledgeBase> pageKb(int pageNum, int pageSize, String keyword) {
+    public Page<KnowledgeBase> pageKb(int pageNum, int pageSize, String keyword, Long scenicSpotId) {
         LambdaQueryWrapper<KnowledgeBase> wrapper = new LambdaQueryWrapper<>();
+        if (scenicSpotId != null) wrapper.eq(KnowledgeBase::getScenicSpotId, scenicSpotId);
         if (keyword != null && !keyword.isBlank()) wrapper.like(KnowledgeBase::getKbName, keyword);
         wrapper.orderByDesc(KnowledgeBase::getCreateTime);
         return this.page(new Page<>(pageNum, pageSize), wrapper);
