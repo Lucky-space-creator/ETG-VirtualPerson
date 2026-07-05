@@ -43,7 +43,9 @@ import com.virtualwife.app.ui.components.ErrorDialog
 import com.virtualwife.app.ui.theme.*
 import com.virtualwife.app.viewmodel.ChatViewModel
 import com.virtualwife.app.viewmodel.VrmViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * 聊天主界面 — 数字人全屏 + 悬浮UI
@@ -78,14 +80,33 @@ fun ChatScreen(
         ErrorDialog(message = uiState.error!!) { chatViewModel.clearError() }
     }
 
+    val currentAvatarName = vrmState.avatarName.ifEmpty { "AI导游" }
+    val interestTags by app.preferencesManager.interestTags.collectAsState(initial = emptySet())
+    val currentSpotId by app.preferencesManager.scenicSpotId.collectAsState(initial = 0L)
+    val currentSpotName by app.preferencesManager.scenicSpotName.collectAsState(initial = "")
+    var isRecording by remember { mutableStateOf(false) }
+    var scenicSpots by remember { mutableStateOf<List<com.virtualwife.app.data.remote.dto.ScenicSpotDto>>(emptyList()) }
+    var showScenicPicker by remember { mutableStateOf(false) }
+
+    // 加载景区列表
+    LaunchedEffect(Unit) {
+        try {
+            val res = com.virtualwife.app.data.remote.RetrofitClient.djangoApi.getScenicSpots()
+            if (res.isSuccessful && res.body()?.isSuccess == true) {
+                scenicSpots = res.body()!!.data ?: emptyList()
+            }
+        } catch (_: Exception) {}
+    }
+
     // 景区选择弹窗
     if (showScenicPicker) {
+        val scope = rememberCoroutineScope()
         AlertDialog(
             onDismissRequest = { showScenicPicker = false },
             title = { Text("选择景区") },
             text = {
-                Column {
-                    scenicSpots.forEach { spot ->
+                LazyColumn(modifier = Modifier.height(300.dp)) {
+                    items(scenicSpots) { spot ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -94,13 +115,13 @@ fun ChatScreen(
                                     if (spot.id == currentSpotId) Color(0xFFE91E63).copy(alpha = 0.1f)
                                     else Color.Transparent
                                 )
-                                .padding(12.dp)
                                 .clickable {
-                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                                         app.preferencesManager.saveScenicSpot(spot.id, spot.spotName)
                                     }
                                     showScenicPicker = false
-                                },
+                                }
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Filled.Place, null,
@@ -114,8 +135,7 @@ fun ChatScreen(
                                 if (!spot.description.isNullOrBlank()) {
                                     Text(spot.description!!,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray,
-                                        maxLines = 1)
+                                        color = Color.Gray, maxLines = 1)
                                 }
                             }
                         }
@@ -126,26 +146,6 @@ fun ChatScreen(
                 TextButton(onClick = { showScenicPicker = false }) { Text("取消") }
             }
         )
-    }
-
-    val currentAvatarName = vrmState.avatarName.ifEmpty { "AI导游" }
-    val interestTags by app.preferencesManager.interestTags.collectAsState(initial = emptySet())
-    val currentSpotId by app.preferencesManager.scenicSpotId.collectAsState(initial = 0L)
-    val currentSpotName by app.preferencesManager.scenicSpotName.collectAsState(initial = "")
-    var isRecording by remember { mutableStateOf(false) }
-    var scenicSpots by remember { mutableStateOf<List<com.virtualwife.app.data.remote.dto.ScenicSpotDto>>(emptyList()) }
-    var showScenicPicker by remember { mutableStateOf(false) }
-
-    // 加载景区列表
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val res = com.virtualwife.app.data.remote.RetrofitClient.adminApi.getScenicSpots()
-                if (res.isSuccessful && res.body()?.isSuccess == true) {
-                    scenicSpots = res.body()!!.data ?: emptyList()
-                }
-            } catch (_: Exception) {}
-        }
     }
     var isPageLoaded by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
