@@ -467,29 +467,18 @@ const VRMBridge = {
     playGuideAction(action) {
         if (!this.vrmModel) return;
 
-        // 映射动作名称到动画名称
         const actionMap = {
-            'point_right': 'pointRight',
-            'point_left': 'pointLeft',
-            'open_arms': 'openArms',
-            'nod': 'nod',
-            'bow': 'bow',
-            'wave': 'waveHand',
-            'think': 'think',
-            'explain': 'explain',
+            'point_right': 'pointRight', 'point_left': 'pointLeft',
+            'open_arms': 'openArms', 'nod': 'nod', 'bow': 'bow',
+            'wave': 'waveHand', 'think': 'think', 'explain': 'explain',
             'idle': 'idle'
         };
 
         const animName = actionMap[action] || action;
-        console.log('[VRM] Playing action:', action, '-> animation:', animName);
 
         if (window.VRMAnimation && VRMAnimation.animations[animName]) {
-            VRMAnimation.play(animName, this.vrmModel, () => {
-                console.log('[VRM] Action completed:', action);
-                if (window.AndroidBridge && window.AndroidBridge.onMotionComplete) {
-                    window.AndroidBridge.onMotionComplete(action);
-                }
-            });
+            // 使用动作队列，避免动作互相覆盖
+            VRMAnimation.queueAction(animName);
         } else {
             console.warn('[VRM] Animation not found:', animName);
         }
@@ -604,13 +593,16 @@ const VRMBridge = {
     _isPlayingAction: false,
     _currentAnimationName: null,
 
+    // 随机待机动作
+    _lastIdleActionTime: 0,
+    _idleActionInterval: 8000,
+
     animate() {
         requestAnimationFrame(() => this.animate());
         const delta = this.clock.getDelta();
         const time = this.clock.getElapsedTime();
 
         if (this.vrmModel) {
-            // VRM更新
             if (this.vrmModel.update) {
                 this.vrmModel.update(delta);
             }
@@ -621,20 +613,32 @@ const VRMBridge = {
                 this._isPlayingAction = VRMAnimation.isPlaying;
             }
 
-            // 持续应用手臂姿势（防止被VRM update重置）
-            // 只在没有动作播放时应用
-            if (this._poseApplied && !this._isPlayingAction) {
+            // 保持手臂姿势（无动作且非说话时）
+            if (this._poseApplied && !this._isPlayingAction && !this._talkingTimer) {
                 this._maintainPose();
             }
 
-            // 待机动画 - 轻微呼吸浮动
-            if (this.vrmModel && this.vrmModel.scene) {
-                this.vrmModel.scene.position.y += Math.sin(time * 1.5) * 0.0003;
+            // 待机呼吸浮动
+            if (this.vrmModel.scene && !this._isPlayingAction) {
+                this.vrmModel.scene.position.y += Math.sin(time * 1.2) * 0.00025;
             }
 
-            // 待机动画 - 轻微左右摇摆（只在非说话状态）
-            if (this.vrmModel && this.vrmModel.scene && !this._talkingTimer) {
-                this.vrmModel.scene.rotation.y = Math.PI + Math.sin(time * 0.5) * 0.02;
+            // 待机轻微摇摆
+            if (this.vrmModel.scene && !this._talkingTimer && !this._isPlayingAction) {
+                this.vrmModel.scene.rotation.y = Math.PI + Math.sin(time * 0.4) * 0.015;
+            }
+
+            // 随机待机动作（参考duix startRandomMotion）
+            if (!this._isPlayingAction && !this._talkingTimer) {
+                if (time - this._lastIdleActionTime > this._idleActionInterval / 1000) {
+                    this._lastIdleActionTime = time;
+                    this._idleActionInterval = 5000 + Math.random() * 10000;
+                    if (Math.random() > 0.5) {
+                        const idleActions = ['nod', 'pointRight', 'explain'];
+                        const act = idleActions[Math.floor(Math.random() * idleActions.length)];
+                        if (window.VRMAnimation) VRMAnimation.play(act, this.vrmModel);
+                    }
+                }
             }
 
             // 眨眼
