@@ -32,6 +32,10 @@
           <el-icon><Cpu /></el-icon>
           <span>LLM配置</span>
         </el-menu-item>
+        <el-menu-item index="/scenic">
+          <el-icon><Histogram /></el-icon>
+          <span>景区管理</span>
+        </el-menu-item>
         <el-menu-item index="/avatar">
           <el-icon><UserFilled /></el-icon>
           <span>形象管理</span>

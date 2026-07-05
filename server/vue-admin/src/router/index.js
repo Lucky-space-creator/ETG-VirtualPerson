@@ -34,6 +34,7 @@ const router = createRouter({
         { path: 'tourist-import', name: 'TouristImport', component: () => import('@/views/TouristImport.vue'), meta: { title: '消费数据导入' } },
         { path: 'role', name: 'Role', component: () => import('@/views/Role.vue'), meta: { title: '角色管理' } },
         { path: 'route', name: 'Route', component: () => import('@/views/Route.vue'), meta: { title: '路线管理' } },
+        { path: 'scenic', name: 'Scenic', component: () => import('@/views/Scenic.vue'), meta: { title: '景区管理' } },
         { path: 'user', name: 'User', component: () => import('@/views/User.vue'), meta: { title: '用户管理' } },
       ],
     },
