@@ -1,4 +1,4 @@
-package com.virtualwife.admin.module.route.entity;
+package com.virtualwife.admin.module.scenic.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -6,18 +6,15 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("route")
-public class Route {
+@TableName("scenic_spot")
+public class ScenicSpot {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Long scenicSpotId;
-    private Long kbId;
-    private String routeName;
-    private String interestTags;
-    private Integer timeBudget;
-    private Integer energyLevel;
+    private String spotName;
+    private String spotCode;
     private String description;
-    private Integer sortOrder;
+    private String coverUrl;
+    private Integer status;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

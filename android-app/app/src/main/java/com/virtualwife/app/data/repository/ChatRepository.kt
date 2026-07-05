@@ -147,6 +147,7 @@ class ChatRepository(
             val avatarName = prefs.avatarName.first()
             val interestTags = prefs.interestTags.first()
             val userInterest = interestTags.joinToString(", ")
+            val scenicSpotId = prefs.scenicSpotId.first()
 
             // 使用adminApi（带认证）而不是djangoApi
             val response = RetrofitClient.adminApi.chat(
@@ -154,7 +155,8 @@ class ChatRepository(
                     query = query,
                     avatarName = avatarName,
                     sessionId = sessionId,
-                    userInterest = userInterest
+                    userInterest = userInterest,
+                    scenicSpotId = if (scenicSpotId > 0) scenicSpotId else null
                 )
             )
             if (response.isSuccessful) {

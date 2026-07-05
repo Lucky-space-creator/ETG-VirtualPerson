@@ -24,7 +24,18 @@ data class ChatRequest(
     @SerializedName("session_id")
     val sessionId: String = "",
     @SerializedName("user_interest")
-    val userInterest: String = ""
+    val userInterest: String = "",
+    @SerializedName("scenic_spot_id")
+    val scenicSpotId: Long? = null
+)
+
+data class ScenicSpotDto(
+    val id: Long = 0,
+    val spotName: String = "",
+    val spotCode: String = "",
+    val description: String? = null,
+    val coverUrl: String? = null,
+    val status: Int = 1
 )
 
 data class ChatResponse(

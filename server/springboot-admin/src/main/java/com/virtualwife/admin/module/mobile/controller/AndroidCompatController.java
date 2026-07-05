@@ -58,6 +58,9 @@ public class AndroidCompatController {
             Long avatarId = request.get("avatar_id") != null
                     ? Long.valueOf(request.get("avatar_id").toString())
                     : null;
+            Long scenicSpotId = request.get("scenic_spot_id") != null
+                    ? Long.valueOf(request.get("scenic_spot_id").toString())
+                    : null;
 
             if (sessionId == null || sessionId.isBlank()) {
                 sessionId = UUID.randomUUID().toString().replace("-", "");
@@ -68,7 +71,7 @@ public class AndroidCompatController {
                 userId = Long.valueOf(request.get("user_id").toString());
             }
 
-            String reply = chatService.chat(userId, sessionId, avatarId, query, scenicSpot, userInterest);
+            String reply = chatService.chat(userId, sessionId, avatarId, query, scenicSpot, userInterest, scenicSpotId);
 
             Map<String, Object> result = new HashMap<>();
             result.put("code", 200);

@@ -6,6 +6,11 @@ import retrofit2.http.*
 
 interface ApiService {
 
+    // ============ 景区相关 (公开接口) ============
+
+    @GET("scenic/list")
+    suspend fun getScenicSpots(): Response<AdminResult<List<ScenicSpotDto>>>
+
     // ============ 聊天相关 (公开接口) ============
 
     @POST("chatbot/chat")

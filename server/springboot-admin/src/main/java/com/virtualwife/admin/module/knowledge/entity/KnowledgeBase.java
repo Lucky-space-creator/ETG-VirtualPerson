@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class KnowledgeBase {
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long scenicSpotId;
     private String kbName;
     private String description;
     private String embeddingModel;

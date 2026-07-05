@@ -17,6 +17,8 @@ public class ChatRecord {
     @ExcelProperty("用户ID")
     private Long userId;
 
+    private Long scenicSpotId;
+
     @ExcelProperty("会话ID")
     private String sessionId;
 

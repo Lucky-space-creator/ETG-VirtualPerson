@@ -30,6 +30,9 @@ class PreferencesManager(private val context: Context) {
         // 用户头像（MinIO URL）
         private val KEY_USER_AVATAR_URL = stringPreferencesKey("user_avatar_url")
         private val KEY_USER_AVATAR_PATH = stringPreferencesKey("user_avatar_path")
+        // 当前景区
+        private val KEY_SCENIC_SPOT_ID = longPreferencesKey("scenic_spot_id")
+        private val KEY_SCENIC_SPOT_NAME = stringPreferencesKey("scenic_spot_name")
     }
 
     val token: Flow<String> = context.dataStore.data.map { it[KEY_TOKEN] ?: "" }
@@ -61,6 +64,8 @@ class PreferencesManager(private val context: Context) {
     val userAvatarPath: Flow<String> = context.dataStore.data.map { it[KEY_USER_AVATAR_PATH] ?: "" }
     val savedUsername: Flow<String> = context.dataStore.data.map { it[KEY_SAVED_USERNAME] ?: "" }
     val savedPassword: Flow<String> = context.dataStore.data.map { it[KEY_SAVED_PASSWORD] ?: "" }
+    val scenicSpotId: Flow<Long> = context.dataStore.data.map { it[KEY_SCENIC_SPOT_ID] ?: 0L }
+    val scenicSpotName: Flow<String> = context.dataStore.data.map { it[KEY_SCENIC_SPOT_NAME] ?: "" }
 
     suspend fun saveToken(token: String) {
         context.dataStore.edit { it[KEY_TOKEN] = token }
@@ -122,6 +127,13 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit {
             it.remove(KEY_USER_AVATAR_URL)
             it.remove(KEY_USER_AVATAR_PATH)
+        }
+    }
+
+    suspend fun saveScenicSpot(id: Long, name: String) {
+        context.dataStore.edit {
+            it[KEY_SCENIC_SPOT_ID] = id
+            it[KEY_SCENIC_SPOT_NAME] = name
         }
     }
 

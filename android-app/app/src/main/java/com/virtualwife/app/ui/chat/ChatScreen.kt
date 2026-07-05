@@ -14,6 +14,7 @@ import android.widget.ImageView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -77,9 +78,75 @@ fun ChatScreen(
         ErrorDialog(message = uiState.error!!) { chatViewModel.clearError() }
     }
 
+    // 景区选择弹窗
+    if (showScenicPicker) {
+        AlertDialog(
+            onDismissRequest = { showScenicPicker = false },
+            title = { Text("选择景区") },
+            text = {
+                Column {
+                    scenicSpots.forEach { spot ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (spot.id == currentSpotId) Color(0xFFE91E63).copy(alpha = 0.1f)
+                                    else Color.Transparent
+                                )
+                                .padding(12.dp)
+                                .clickable {
+                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                        app.preferencesManager.saveScenicSpot(spot.id, spot.spotName)
+                                    }
+                                    showScenicPicker = false
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Filled.Place, null,
+                                tint = if (spot.id == currentSpotId) Color(0xFFE91E63) else Color.Gray,
+                                modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(spot.spotName,
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                                    color = if (spot.id == currentSpotId) Color(0xFFE91E63) else Color(0xFF1C1B1F))
+                                if (!spot.description.isNullOrBlank()) {
+                                    Text(spot.description!!,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray,
+                                        maxLines = 1)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showScenicPicker = false }) { Text("取消") }
+            }
+        )
+    }
+
     val currentAvatarName = vrmState.avatarName.ifEmpty { "AI导游" }
     val interestTags by app.preferencesManager.interestTags.collectAsState(initial = emptySet())
+    val currentSpotId by app.preferencesManager.scenicSpotId.collectAsState(initial = 0L)
+    val currentSpotName by app.preferencesManager.scenicSpotName.collectAsState(initial = "")
     var isRecording by remember { mutableStateOf(false) }
+    var scenicSpots by remember { mutableStateOf<List<com.virtualwife.app.data.remote.dto.ScenicSpotDto>>(emptyList()) }
+    var showScenicPicker by remember { mutableStateOf(false) }
+
+    // 加载景区列表
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val res = com.virtualwife.app.data.remote.RetrofitClient.adminApi.getScenicSpots()
+                if (res.isSuccessful && res.body()?.isSuccess == true) {
+                    scenicSpots = res.body()!!.data ?: emptyList()
+                }
+            } catch (_: Exception) {}
+        }
+    }
     var isPageLoaded by remember { mutableStateOf(false) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
@@ -188,7 +255,9 @@ fun ChatScreen(
             // 顶部栏
             TopBar(
                 avatarName = currentAvatarName,
+                scenicSpotName = currentSpotName.ifEmpty { null },
                 routeName = uiState.selectedRouteName,
+                onScenicClick = { showScenicPicker = true },
                 onRouteClick = onNavigateToRoute,
                 onSettingsClick = onNavigateToSettings
             )
@@ -246,7 +315,9 @@ fun ChatScreen(
 @Composable
 private fun TopBar(
     avatarName: String,
+    scenicSpotName: String? = null,
     routeName: String? = null,
+    onScenicClick: () -> Unit = {},
     onRouteClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -262,21 +333,25 @@ private fun TopBar(
             Icon(Icons.Filled.Map, "路线", tint = Color.White)
         }
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).clickable { onScenicClick() },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(avatarName,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = Color.White)
-            // 已选路线时显示路线名，否则显示默认文字
+            // 显示景区名或路线名
             if (routeName != null) {
                 Text("🗺️ $routeName",
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                     color = Color(0xFF1C1B1F))
+            } else if (scenicSpotName != null) {
+                Text("📍 $scenicSpotName",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White.copy(alpha = 0.9f))
             } else {
-                Text("在线陪你逛",
+                Text("点击选择景区",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.8f))
+                    color = Color.White.copy(alpha = 0.7f))
             }
         }
         IconButton(onClick = onSettingsClick) {

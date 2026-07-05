@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class StatisticsDaily {
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long scenicSpotId;
     private LocalDate statDate;
     private Integer totalUsers;
     private Integer newUsers;

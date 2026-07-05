@@ -7,6 +7,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # 服务端口
 SERVER_PORT = int(os.getenv("RAG_SERVER_PORT", 5001))
 
+# Spring Boot 后端地址
+SPRING_BOOT_URL = os.getenv("SPRING_BOOT_URL", "http://localhost:8080")
+
 # RAG API认证密钥 (生产环境必须设置)
 RAG_API_KEY = os.getenv("RAG_API_KEY", "")
 

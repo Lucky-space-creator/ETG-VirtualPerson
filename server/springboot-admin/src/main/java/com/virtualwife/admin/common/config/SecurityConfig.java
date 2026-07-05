@@ -50,6 +50,8 @@ public class SecurityConfig {
                                 "/swagger-resources/**", "/swagger-ui/**", "/favicon.ico").permitAll()
 
                         // ==================== GET读操作公开（Android游客端）====================
+                        // 景区列表 - 公开
+                        .requestMatchers(HttpMethod.GET, "/scenic/**").permitAll()
                         // 数字人形象 - 只读
                         .requestMatchers(HttpMethod.GET, "/avatar/**").permitAll()
                         // 路线推荐 - 只读

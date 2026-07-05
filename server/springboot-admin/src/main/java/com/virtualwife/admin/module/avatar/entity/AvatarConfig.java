@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class AvatarConfig {
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long scenicSpotId;
     private String avatarName;
     private String vrmModelUrl;
     private String thumbnailUrl;

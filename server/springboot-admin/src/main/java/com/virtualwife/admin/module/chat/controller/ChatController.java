@@ -43,10 +43,11 @@ public class ChatController {
 
             Long userId = request.getUserId() != null ? request.getUserId() : 0L;
             Long avatarId = request.getAvatarId();
+            Long scenicSpotId = request.getScenicSpotId();
             String scenicSpot = request.getScenicSpot() != null ? request.getScenicSpot() : "default";
             String userInterest = request.getUserInterest() != null ? request.getUserInterest() : "";
 
-            String reply = chatService.chat(userId, sessionId, avatarId, request.getMessage(), scenicSpot, userInterest);
+            String reply = chatService.chat(userId, sessionId, avatarId, request.getMessage(), scenicSpot, userInterest, scenicSpotId);
 
             Map<String, Object> data = new HashMap<>();
             data.put("sessionId", sessionId);

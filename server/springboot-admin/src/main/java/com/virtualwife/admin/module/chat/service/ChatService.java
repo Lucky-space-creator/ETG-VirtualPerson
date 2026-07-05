@@ -45,23 +45,32 @@ public class ChatService {
      * @param userMsg      用户消息文本
      * @param scenicSpot   景区标识（可选）
      * @param userInterest 用户兴趣偏好（可选）
+     * @param scenicSpotId 景区ID（可选）
      * @return AI回复文本
      */
-    public String chat(Long userId, String sessionId, Long avatarId, String userMsg, String scenicSpot, String userInterest) {
+    public String chat(Long userId, String sessionId, Long avatarId, String userMsg, String scenicSpot, String userInterest, Long scenicSpotId) {
         // 1. 保存用户消息
         ChatRecord userRecord = new ChatRecord();
         userRecord.setUserId(userId);
+        userRecord.setScenicSpotId(scenicSpotId);
         userRecord.setSessionId(sessionId);
         userRecord.setMessageType("text");
         userRecord.setContent(userMsg);
         userRecord.setEmotion("neutral");
 
-        // 获取数字人名称
+        // 获取数字人名称（优先按景区查找）
         String avatarName = "默认导游";
         AvatarConfig avatar = null;
         try {
             if (avatarId != null) {
                 avatar = avatarService.getById(avatarId);
+            }
+            if (avatar == null && scenicSpotId != null) {
+                // 按景区查找默认数字人
+                avatar = avatarService.lambdaQuery()
+                        .eq(AvatarConfig::getScenicSpotId, scenicSpotId)
+                        .eq(AvatarConfig::getIsDefault, 1)
+                        .one();
             }
             if (avatar == null) {
                 // 使用第一个可用的数字人
@@ -98,7 +107,7 @@ public class ChatService {
         if (llmConfig == null) {
             log.error("未找到默认LLM配置");
             String fallback = "抱歉，AI服务暂时不可用，请联系管理员配置LLM。";
-            saveAiReply(userId, sessionId, avatarName, fallback);
+            saveAiReply(userId, sessionId, avatarName, fallback, scenicSpotId);
             return fallback;
         }
 
@@ -112,7 +121,7 @@ public class ChatService {
         }
 
         // 7. 保存AI回复
-        saveAiReply(userId, sessionId, avatarName, aiReply);
+        saveAiReply(userId, sessionId, avatarName, aiReply, scenicSpotId);
 
         return aiReply;
     }
@@ -240,9 +249,10 @@ public class ChatService {
     /**
      * 保存AI回复
      */
-    private void saveAiReply(Long userId, String sessionId, String avatarName, String content) {
+    private void saveAiReply(Long userId, String sessionId, String avatarName, String content, Long scenicSpotId) {
         ChatRecord aiRecord = new ChatRecord();
         aiRecord.setUserId(userId);
+        aiRecord.setScenicSpotId(scenicSpotId);
         aiRecord.setSessionId(sessionId);
         aiRecord.setAvatarName(avatarName);
         aiRecord.setMessageType("ai_reply");

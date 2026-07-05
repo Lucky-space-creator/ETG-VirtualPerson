@@ -293,3 +293,43 @@ CREATE TABLE `spot` (
     PRIMARY KEY (`id`),
     KEY `idx_route_id` (`route_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='景点表';
+
+-- ============================================================
+-- 15. scenic_spot 景区表
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `scenic_spot` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `spot_name` VARCHAR(100) NOT NULL COMMENT '景区名称',
+    `spot_code` VARCHAR(50) NOT NULL COMMENT '景区编码',
+    `description` TEXT COMMENT '景区描述',
+    `cover_url` VARCHAR(255) DEFAULT NULL COMMENT '封面图URL',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态 0=禁用 1=启用',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_spot_code` (`spot_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='景区表';
+
+-- 默认景区
+INSERT IGNORE INTO `scenic_spot` (`spot_name`, `spot_code`, `description`) VALUES
+('灵山胜境', 'lingshan', '无锡灵山大佛景区');
+
+-- 添加景区关联字段
+ALTER TABLE `avatar_config` ADD COLUMN IF NOT EXISTS `scenic_spot_id` BIGINT DEFAULT NULL COMMENT '所属景区ID' AFTER `id`;
+ALTER TABLE `route` ADD COLUMN IF NOT EXISTS `scenic_spot_id` BIGINT DEFAULT NULL COMMENT '所属景区ID' AFTER `id`;
+ALTER TABLE `knowledge_base` ADD COLUMN IF NOT EXISTS `scenic_spot_id` BIGINT DEFAULT NULL COMMENT '所属景区ID' AFTER `id`;
+ALTER TABLE `chat_record` ADD COLUMN IF NOT EXISTS `scenic_spot_id` BIGINT DEFAULT NULL COMMENT '所属景区ID' AFTER `user_id`;
+ALTER TABLE `statistics_daily` ADD COLUMN IF NOT EXISTS `scenic_spot_id` BIGINT DEFAULT NULL COMMENT '所属景区ID' AFTER `stat_date`;
+ALTER TABLE `tourist_consumption` ADD COLUMN IF NOT EXISTS `scenic_spot_id` BIGINT DEFAULT NULL COMMENT '所属景区ID' AFTER `id`;
+
+-- 默认数据关联到灵山胜境
+UPDATE `avatar_config` SET `scenic_spot_id` = 1 WHERE `scenic_spot_id` IS NULL;
+UPDATE `route` SET `scenic_spot_id` = 1 WHERE `scenic_spot_id` IS NULL;
+UPDATE `knowledge_base` SET `scenic_spot_id` = 1 WHERE `scenic_spot_id` IS NULL;
+
+-- 添加索引
+ALTER TABLE `avatar_config` ADD INDEX IF NOT EXISTS `idx_scenic_spot_id` (`scenic_spot_id`);
+ALTER TABLE `route` ADD INDEX IF NOT EXISTS `idx_scenic_spot_id` (`scenic_spot_id`);
+ALTER TABLE `knowledge_base` ADD INDEX IF NOT EXISTS `idx_scenic_spot_id` (`scenic_spot_id`);
+ALTER TABLE `chat_record` ADD INDEX IF NOT EXISTS `idx_scenic_spot_id` (`scenic_spot_id`);
+ALTER TABLE `statistics_daily` ADD INDEX IF NOT EXISTS `idx_scenic_spot_id` (`scenic_spot_id`);

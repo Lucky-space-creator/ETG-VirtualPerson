@@ -16,6 +16,7 @@ public class TouristConsumption {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long scenicSpotId;
 
     /**
      * 游客ID

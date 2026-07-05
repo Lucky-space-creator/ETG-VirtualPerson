@@ -245,7 +245,8 @@ const analyzeData = async () => {
     formData.append('file', selectedFile.value)
 
     const res = await request.post('http://localhost:5001/api/rag/tourist/analyze', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000 // 60秒超时
     })
 
     analysisResult.value = res.data
