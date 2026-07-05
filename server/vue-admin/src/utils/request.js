@@ -39,6 +39,11 @@ request.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
     if (token) config.headers.Authorization = `Bearer ${token}`
+    // 全局景区ID参数
+    const spotId = localStorage.getItem('currentSpotId')
+    if (spotId) {
+      config.params = { ...config.params, scenicSpotId: spotId }
+    }
     // GET请求去重
     if (config.method === 'get') addPending(config)
     return config
