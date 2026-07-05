@@ -143,20 +143,8 @@ const loadSpots = async () => {
 
 const onSpotChange = () => {
   localStorage.setItem('currentSpotId', currentSpotId.value)
-  // 刷新当前页面数据
   window.dispatchEvent(new CustomEvent('scenic-changed', { detail: currentSpotId.value }))
 }
-
-// 暴露给子页面获取
-const getCurrentSpotId = () => currentSpotId.value
-
-onMounted(() => {
-  themeStore.init()
-  loadSpots()
-})
-
-defineExpose({ getCurrentSpotId })
-</script>
 
 const themeLabel = computed(() => {
   if (themeStore.mode === 'light') return '浅色模式'
@@ -164,7 +152,6 @@ const themeLabel = computed(() => {
   return '跟随系统'
 })
 
-// 菜单颜色
 const menuBgColor = computed(() => themeStore.isDark ? 'transparent' : '#ffffff')
 const menuTextColor = computed(() => themeStore.isDark ? '#94a3b8' : '#606266')
 const menuActiveColor = computed(() => themeStore.isDark ? '#667eea' : '#409EFF')
@@ -189,6 +176,7 @@ const handleCommand = (command) => {
 
 onMounted(() => {
   themeStore.init()
+  loadSpots()
 })
 </script>
 
