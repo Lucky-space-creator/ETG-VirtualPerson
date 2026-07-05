@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -88,6 +88,8 @@ const handleSizeChange = () => {
 const fetchData = async () => {
   loading.value = true
   try {
+    const spotId = localStorage.getItem('currentSpotId')
+    if (spotId) query.value.scenicSpotId = spotId
     const res = await request.get('/chat/page', { params: query.value })
     const data = res.data.data
     tableData.value = data.records
@@ -110,5 +112,11 @@ const handleExport = () => {
   window.open(`/api/admin/chat/export?${params}`, '_blank')
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  fetchData()
+  window.addEventListener('scenic-changed', fetchData)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scenic-changed', fetchData)
+})
 </script>

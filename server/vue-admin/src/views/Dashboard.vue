@@ -303,28 +303,29 @@ const rowStyle = {
   borderBottom: '1px solid rgba(255,255,255,0.03)'
 }
 
+// 景区ID
+const spotId = () => localStorage.getItem('currentSpotId') || 1
+
 // 数据获取
 const fetchStats = async () => {
   try {
-    const res = await request.get('/statistics/dashboard')
+    const res = await request.get('/statistics/dashboard', { params: { scenicSpotId: spotId() } })
     stats.value = res.data.data || {}
-    console.log('[Dashboard] Stats loaded:', stats.value)
-  } catch (e) { console.error('[Dashboard] fetchStats error:', e) }
+  } catch (e) { }
 }
 
 const fetchRealtime = async () => {
   try {
-    const res = await request.get('/statistics/realtime')
+    const res = await request.get('/statistics/realtime', { params: { scenicSpotId: spotId() } })
     realtime.value = res.data.data || {}
-    console.log('[Dashboard] Realtime loaded:', realtime.value)
-  } catch (e) { console.error('[Dashboard] fetchRealtime error:', e) }
+  } catch (e) { }
 }
 
 const fetchTrend = async () => {
   try {
-    const res = await request.get(`/statistics/trend?days=${trendDays.value}`)
+    const res = await request.get('/statistics/trend', { params: { days: trendDays.value, scenicSpotId: spotId() } })
     await renderTrendChart(res.data.data || [])
-  } catch (e) { console.error('[Dashboard] fetchTrend error:', e) }
+  } catch (e) { }
 }
 
 const fetchConsumptionData = async () => {
@@ -426,6 +427,8 @@ const renderSpotChart = async (data) => {
 
 // 轮询
 let pollTimer = null
+const refreshAll = () => { fetchStats(); fetchRealtime(); fetchTrend(); fetchConsumptionData() }
+
 const poll = async () => {
   await Promise.all([fetchStats(), fetchRealtime()])
 }
@@ -440,11 +443,15 @@ onMounted(async () => {
   fetchTrend()
   fetchConsumptionData()
   pollTimer = setInterval(poll, 300000)
+
+  // 景区切换时刷新
+  window.addEventListener('scenic-changed', refreshAll)
 })
 
 onBeforeUnmount(() => {
   charts.forEach(c => c.dispose())
   charts = []
+  window.removeEventListener('scenic-changed', refreshAll)
   if (pollTimer) clearInterval(pollTimer)
 })
 </script>

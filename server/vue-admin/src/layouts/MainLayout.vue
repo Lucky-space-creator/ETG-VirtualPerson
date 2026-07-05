@@ -70,6 +70,15 @@
       <el-header class="header">
         <div class="header-left">
           <h3>{{ route.meta.title }}</h3>
+          <el-select
+            v-model="currentSpotId"
+            placeholder="选择景区"
+            size="small"
+            style="width:180px;margin-left:24px"
+            @change="onSpotChange"
+          >
+            <el-option v-for="s in spotList" :key="s.id" :label="s.spotName" :value="s.id" />
+          </el-select>
         </div>
         <div class="header-right">
           <!-- 主题切换按钮 -->
@@ -107,15 +116,47 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { Sunny, Moon, Monitor } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
+
+// 景区全局选择
+const spotList = ref([])
+const currentSpotId = ref(localStorage.getItem('currentSpotId') || '')
+
+const loadSpots = async () => {
+  try {
+    const res = await request.get('/scenic/page', { params: { pageSize: 50 } })
+    spotList.value = res.data?.data?.records || []
+    if (!currentSpotId.value && spotList.value.length > 0) {
+      currentSpotId.value = spotList.value[0].id
+    }
+  } catch (_) {}
+}
+
+const onSpotChange = () => {
+  localStorage.setItem('currentSpotId', currentSpotId.value)
+  // 刷新当前页面数据
+  window.dispatchEvent(new CustomEvent('scenic-changed', { detail: currentSpotId.value }))
+}
+
+// 暴露给子页面获取
+const getCurrentSpotId = () => currentSpotId.value
+
+onMounted(() => {
+  themeStore.init()
+  loadSpots()
+})
+
+defineExpose({ getCurrentSpotId })
+</script>
 
 const themeLabel = computed(() => {
   if (themeStore.mode === 'light') return '浅色模式'
